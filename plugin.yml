@@ -1,0 +1,11 @@
+main: com.unknown6656.Main
+name: MCPU
+version: 14.88
+author: Unknown6656
+description: An MCPU inside Minecraft
+commands:
+  mcpu:
+    description: The MCPU main command. Type "/mcpu ?" for more information.
+    usage: /mcpu
+    permission: unknown6656.elevated
+    permission-message: You don't have the permissions required to use this command.
