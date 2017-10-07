@@ -5,6 +5,8 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -22,18 +24,26 @@ import net.minecraft.server.v1_12_R1.NBTTagList;
 public final class Main extends JavaPlugin
 {
     protected final HashMap<Integer, MCPUProcessor> cores = new HashMap<>();
-    private String usagetext;
+    static String usagetext;
+    static Logger log;
     
     
     @Override
     public void onEnable()
     {
-        usagetext = "/mcpu command usage:\n" + "    list            - Lists all available MCPU cores\n" +
-                    "    add             - Adds a new core to the world\n" + "    remove <n>      - Removes the core No. n\n" +
-                    "    loadb <n>       - Loads the book hold in the hand into the core No. n\n" +
-                    /* load from uri ? */
-                    "    start <n>       - Starts the core No. n\n" + "    stop <n>        - Halts the core No. n\n" +
-                    "    reset <n>       - Halts and resets the core No. n\n" + "    state <n>       - Displays the state of core No. n";
+        usagetext = "/mcpu command usage:\n" +
+                    "  list            - Lists all available MCPU cores\n" +
+                    "  add             - Adds a new core to the world\n" +
+                    "  remove <n>      - Removes the core No. n\n" +
+                    "  loadb <n>       - Loads the book hold in the hand into the core No. n\n" +
+                    "  loadu <n> <u>   - Loads the string acessible via the given HTTP URI u into the core No. n\n" +
+                    "  start <n>       - Starts the processor core No. n\n" +
+                    "  stop <n>        - Halts the core No. n\n" +
+                    "  reset <n>       - Halts and resets the core No. n\n" +
+                    "  state <n>       - Displays the state of core No. n";
+        
+        log = getLogger();
+        log.log(Level.INFO, MCPUOpcode.Opcodes.size() + " instructions loaded!");
     }
     
     @Override
@@ -96,7 +106,7 @@ public final class Main extends JavaPlugin
                             
                             if (book == null)
                                 book = GetBook(player.getInventory().getItemInOffHand());
-
+                            
                             CompileLoad(c, String.join("\n", book), sender);
                         }
                         else
@@ -104,7 +114,9 @@ public final class Main extends JavaPlugin
                     });
                     break;
                 case "loadu":
-                    final String[] argv = args; // IDE throws some obscure error if I replace 'argv' with 'args' in this block
+                    final String[] argv = args; // IDE throws some obscure error
+                                                // if I replace 'argv' with
+                                                // 'args' in this block
                     
                     GetCore(args, 1, sender, c ->
                     {
@@ -120,7 +132,7 @@ public final class Main extends JavaPlugin
                                 
                                 while ((s = reader.readLine()) != null)
                                     code.append('\n').append(s);
-
+                                
                                 CompileLoad(c, code.toString(), sender);
                             }
                             catch (Exception e)
@@ -155,14 +167,21 @@ public final class Main extends JavaPlugin
     
     private void CompileLoad(MCPUProcessor core, String code, CommandSender sender)
     {
-        MCPUCompilerResult res = MCPUCompiler.Compile(code);
-
-        if (res.Success)
-            core.Load(res.Instructions);
-        else
-            sender.sendMessage(ChatColor.RED + "The code could not be loaded into the core due to the following compiler error(s):\n" + res.ErrorMessage);
+        try
+        {
+            MCPUCompilerResult res = MCPUAssemblyCompiler.Compile(code);
+            
+            if (res.Success)
+                core.Load(res.Instructions);
+            else
+                sender.sendMessage(ChatColor.RED + "The code could not be loaded into the core due to the following compiler error(s):\n" + res.ErrorMessage);
+        }
+        catch (Exception e)
+        {
+            sender.sendMessage(ChatColor.RED + "The code could not be loaded into the core due to the following compiler error(s):\n" + e.getMessage());
+        }
     }
-
+    
     private static String[] GetBook(org.bukkit.inventory.ItemStack stack)
     {
         if (stack != null)

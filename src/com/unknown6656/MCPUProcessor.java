@@ -10,7 +10,7 @@ public final class MCPUProcessor
     private final Consumer<String> errorcallback;
     private final int[] memory = new int[4096];
     private MCPUInstruction[] instructions;
-    private int instructionpointer;
+    public int instructionpointer;
     private boolean canrun;
     private int ticks;
 
@@ -82,13 +82,16 @@ public final class MCPUProcessor
                 Raise(OnInstructionLoaded, current);
                 
                 MCPUCallframe frame = callstack.peek();
+                MCPUOpcode opcode = current.GetOPCode();
                 
                 try
                 {
-                    if (!current.Execute(this, frame))
-                        Failwith("The execution of the instruction '" + current + "' failed.");
+                    if ((opcode.MinimumStackSize() >= 0) && (opcode.MinimumArgumentCount() > frame.StackSize()))
+                        Failwith("The execution of the opcode '" + opcode + "' requires at least " + opcode.MinimumArgumentCount() + " values to be on the current stack.");
                     else
-                        Raise(OnInstructionExecuted, current);
+                        canrun = current.Execute(this, frame);
+
+                    Raise(OnInstructionExecuted, current);
 
                     ++instructionpointer;
                 }

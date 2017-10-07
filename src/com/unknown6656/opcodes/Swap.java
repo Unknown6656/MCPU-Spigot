@@ -8,6 +8,12 @@ import com.unknown6656.MCPUProcessor;
 public final class Swap extends MCPUOpcode
 {
     @Override
+    public int MinimumStackSize()
+    {
+        return 2;
+    }
+    
+    @Override
     public boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
         int top = frame.Pop();

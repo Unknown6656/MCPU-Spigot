@@ -16,6 +16,12 @@ class BinaryOpcode extends MCPUOpcode
     {
         function = func;
     }
+
+    @Override
+    public final int MinimumStackSize()
+    {
+        return 2;
+    }
     
     @Override
     public final int MinimumArgumentCount()

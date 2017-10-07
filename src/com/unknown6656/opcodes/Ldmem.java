@@ -8,6 +8,12 @@ import com.unknown6656.MCPUProcessor;
 public final class Ldmem extends MCPUOpcode
 {
     @Override
+    public final int MinimumStackSize()
+    {
+        return 1;
+    }
+    
+    @Override
     public boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
         int addr = frame.Pop();

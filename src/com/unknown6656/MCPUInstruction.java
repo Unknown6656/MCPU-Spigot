@@ -1,5 +1,6 @@
 package com.unknown6656;
 
+
 public final class MCPUInstruction
 {
     private int[] arguments;
@@ -15,6 +16,11 @@ public final class MCPUInstruction
     public boolean Execute(MCPUProcessor proc, MCPUCallframe frame)
     {
         return (arguments.length >= opcode.MinimumArgumentCount()) && opcode.Execute(arguments, frame, proc);
+    }
+    
+    public MCPUOpcode GetOPCode()
+    {
+        return opcode;
     }
     
     @Override

@@ -12,6 +12,12 @@ public final class Starg extends MCPUOpcode
     {
         return 1;
     }
+
+    @Override
+    public int MinimumStackSize()
+    {
+        return 1;
+    }
     
     @Override
     public boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)

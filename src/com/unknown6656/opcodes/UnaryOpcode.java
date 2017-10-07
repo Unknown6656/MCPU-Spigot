@@ -16,6 +16,12 @@ class UnaryOpcode extends MCPUOpcode
     {
         function = func;
     }
+
+    @Override
+    public final int MinimumStackSize()
+    {
+        return 1;
+    }
     
     @Override
     public final int MinimumArgumentCount()
