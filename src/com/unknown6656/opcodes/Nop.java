@@ -8,8 +8,7 @@ import com.unknown6656.MCPUProcessor;
 public final class Nop extends MCPUOpcode
 {
     @Override
-    public boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
+    public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
-        return true;
     }
 }

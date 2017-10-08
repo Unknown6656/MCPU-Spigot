@@ -20,13 +20,11 @@ public final class Starg extends MCPUOpcode
     }
     
     @Override
-    public boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
+    public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
         int arg = arguments[0];
         int val = frame.Pop();
         
         frame.Arguments[arg] = val;
-        
-        return true;
     }
 }

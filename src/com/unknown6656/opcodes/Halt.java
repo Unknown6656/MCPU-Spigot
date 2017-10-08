@@ -14,8 +14,8 @@ public final class Halt extends MCPUOpcode
     }
     
     @Override
-    public boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
+    public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
-        return false;
+        proc.Stop();
     }
 }

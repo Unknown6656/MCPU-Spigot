@@ -32,8 +32,15 @@ public abstract class MCPUOpcode
         catch (NoClassDefFoundError e)
         {
             // We have to do this shit manually
-            // I'm hardcoding an array here for now...... fucking java
-            for (String name : "Add And Br Brtrue Brfalse Div Halt Ldarg Ldc Ldmem Mod Mov Mul Neg Not Nop Or Starg Stmem Sub Swap Xor".split(" "))
+            // I'm hardcoding a list here for now ...... fucking java
+            // Biggest piece of shit I ever had to write .......
+            final String instr = "Add And Br Brtrue Brfalse Call Div Decr Halt Incr Ldarg Ldc Ldmem Mod Mov Mul Neg Not Nop Or Ret Starg Stmem Sub Swap Xor";
+            // Dear Microsoft,
+            // Please buy Oracle company (or maybe don't, because your stock market value will crash)
+            // and make the usage and development of/with Java illegal.
+            // Thank you.
+            
+            for (String name : instr.split(" "))
                 try
                 {
                     Class<?> type = Class.forName(pack + '.' + name);
@@ -60,7 +67,7 @@ public abstract class MCPUOpcode
         return -1;
     }
     
-    public abstract boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc);
+    public abstract void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc);
     
     @Override
     public String toString()

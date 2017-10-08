@@ -14,14 +14,12 @@ public final class Swap extends MCPUOpcode
     }
     
     @Override
-    public boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
+    public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
         int top = frame.Pop();
         int bottom = frame.Pop();
         
         frame.Push(top);
         frame.Push(bottom);
-        
-        return true;
     }
 }

@@ -13,9 +13,12 @@ public final class MCPUInstruction
         opcode = opc;
     }
     
-    public boolean Execute(MCPUProcessor proc, MCPUCallframe frame)
+    public void Execute(MCPUProcessor proc, MCPUCallframe frame)
     {
-        return (arguments.length >= opcode.MinimumArgumentCount()) && opcode.Execute(arguments, frame, proc);
+        if (arguments.length >= opcode.MinimumArgumentCount())
+            opcode.Execute(arguments, frame, proc);
+        else
+            proc.Stop();
     }
     
     public MCPUOpcode GetOPCode()

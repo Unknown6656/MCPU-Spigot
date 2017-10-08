@@ -30,14 +30,12 @@ class BinaryOpcode extends MCPUOpcode
     }
     
     @Override
-    public final boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
+    public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
         int y = frame.Pop();
         int x = frame.Pop();
         int res = function.apply(x, y);
         
         frame.Push(res);
-        
-        return true;
     }
 }

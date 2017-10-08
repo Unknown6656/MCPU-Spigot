@@ -14,10 +14,8 @@ public final class Ldc extends MCPUOpcode
     }
     
     @Override
-    public boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
+    public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
         frame.Push(arguments[0]);
-        
-        return true;
     }
 }

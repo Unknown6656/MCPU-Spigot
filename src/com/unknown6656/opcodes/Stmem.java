@@ -14,13 +14,11 @@ public final class Stmem extends MCPUOpcode
     }
     
     @Override
-    public boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
+    public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
         int val = frame.Pop();
         int addr = frame.Pop();
         
         proc.Memory(addr, val);
-        
-        return true;
     }
 }

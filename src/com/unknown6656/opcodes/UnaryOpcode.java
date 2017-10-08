@@ -30,13 +30,11 @@ class UnaryOpcode extends MCPUOpcode
     }
     
     @Override
-    public final boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
+    public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
         int x = frame.Pop();
         int res = function.apply(x);
         
         frame.Push(res);
-        
-        return true;
     }
 }

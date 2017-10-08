@@ -14,10 +14,8 @@ public final class Br extends MCPUOpcode
     }
     
     @Override
-    public boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
+    public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
-        proc.instructionpointer = arguments[0] - 1;
-        
-        return true;
+        proc.InstructionPointer = arguments[0] - 1;
     }
 }

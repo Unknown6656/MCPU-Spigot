@@ -14,12 +14,10 @@ public final class Ldarg extends MCPUOpcode
     }
     
     @Override
-    public boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
+    public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
         int arg = frame.Arguments[arguments[0]];
         
         frame.Push(arg);
-        
-        return true;
     }
 }

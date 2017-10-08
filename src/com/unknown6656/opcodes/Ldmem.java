@@ -14,13 +14,11 @@ public final class Ldmem extends MCPUOpcode
     }
     
     @Override
-    public boolean Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
+    public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
         int addr = frame.Pop();
         int val = proc.Memory(addr);
         
         frame.Push(val);
-        
-        return true;
     }
 }
