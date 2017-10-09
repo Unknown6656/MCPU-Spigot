@@ -7,15 +7,12 @@ import java.util.function.Function;
 
 import org.bukkit.entity.Player;
 
-import net.minecraft.server.v1_12_R1.BlockStateInteger;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
-import org.bukkit.craftbukkit.v1_12_R1.util.CraftMagicNumbers;
 
 
 public final class MCPUProcessor
@@ -24,7 +21,7 @@ public final class MCPUProcessor
     private final ArrayList<Tuple<Byte, Boolean>> ioports; // number, direction (true=out, false=in)
     private final int[] memory = new int[4096];
     private MCPUInstruction[] instructions;
-    private final int sideoffset;
+    public final int sideoffset;
     private final int sidecount;
     private boolean canrun;
     private int ticks;
@@ -135,14 +132,14 @@ public final class MCPUProcessor
                 if (InstructionPointer < instructions.length)
                 {
                     current = instructions[InstructionPointer];
-                            
+                    
                     if (current != null)
                     {
                         MCPUOpcode opc = current.GetOPCode();
-
+                        
                         GetSign(s -> s.setLine(2, opc.toString()));
                     }
-                }   
+                }
             }
             
             SetTicks(ticks + 1);
@@ -195,8 +192,8 @@ public final class MCPUProcessor
             // if (b.getType() == Material.REDSTONE_WIRE)
             // CraftMagicNumbers.getBlock(b).getBlockData().get(BlockStateInteger.of("power", 0, p.x));
             Location l1 = GetIOPortAdjacent(port);
-            Location l2 = l1.clone();
-
+            Location l2 = l1.clone().add(0, -1, 0);
+            
             if (port < sidecount)
                 l1.add(0, 0, 1);
             else if (port < 2 * sidecount)
@@ -205,7 +202,7 @@ public final class MCPUProcessor
                 l1.add(0, 0, -1);
             else
                 l1.add(1, 0, 0);
-
+            
             l1.getBlock().setType(value != 0 ? Material.REDSTONE_BLOCK : Material.IRON_BLOCK);
             l2.getBlock().setType(value != 0 ? Material.REDSTONE_BLOCK : Material.IRON_BLOCK);
             
@@ -355,7 +352,10 @@ public final class MCPUProcessor
     
     public String StatusString()
     {
-        return String.format("(%d|%d|%d) created by %s (%s), %s, %s", Location.x, Location.y, Location.z, Creator.getDisplayName(), Creator.getAddress().toString(), canrun ? "running" : "halted", IsEnabled() ? "enabled" : "disabled");
+        return String.format("(%d|%d|%d) created by %s (%s), %s, %s", Location.x, Location.y, Location.z, Creator.getDisplayName(), Creator.getAddress().toString(), canrun ? "running" :
+                                                                                                                                                                            "halted", IsEnabled() ?
+                                                                                                                                                                                                  "enabled" :
+                                                                                                                                                                                                  "disabled");
     }
     
     public String AssemblyInstructions()
@@ -368,11 +368,17 @@ public final class MCPUProcessor
             
         return sb.toString().trim();
     }
-
+    
     public boolean IsEnabled()
     {
         Block b = World.getBlockAt(Location.x - sideoffset + 1, Location.y + 1, Location.z - sideoffset);
+        
+        return b.getType() == Material.LEVER ? b.isBlockPowered() || (b.getBlockPower() != 0) : true;
+    }
 
-        return b.isBlockPowered() || (b.getBlockPower() != 0);
+   
+    public int MemorySize()
+    {
+        return memory == null ? -1 : memory.length;
     }
 }

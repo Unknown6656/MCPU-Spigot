@@ -124,8 +124,10 @@ public final class MCPUAssemblyCompiler
                         }
                     }
                 }
-                else
+                else if (line.trim().length() > 0)
                     Error(cleaned.y, errors, linenr, "The expression '" + line + "' could not be parsed.");
+                else
+                    preinstr.add(new PrecompiledInstruction(MCPUOpcode.Opcodes.get("nop")));
             }
         }
         
@@ -136,26 +138,26 @@ public final class MCPUAssemblyCompiler
         for (PrecompiledInstruction pi : preinstr)
             Main.log.log(Level.INFO, pi.toString());
         
-        if (errors.size() > 0)
-            return new MCPUCompilerResult(null, String.join("\n", errors));
-        else
+        return errors.size() > 0 ? new MCPUCompilerResult(null, String.join("\n", errors)) : new MCPUCompilerResult(Optimize(cleaned.y, preinstr), null);
+    }
+    
+    private static MCPUInstruction[] Optimize(HashMap<Integer, Integer> mapper, LinkedList<PrecompiledInstruction> preinstr)
+    {
+        MCPUInstruction[] compiled = new MCPUInstruction[preinstr.size()];
+        int i = 0;
+        
+        for (PrecompiledInstruction ins : preinstr)
         {
-            MCPUInstruction[] compiled = new MCPUInstruction[preinstr.size()];
-            int i = 0;
+            int[] args = new int[ins.Arguments.size()];
+            int j = 0;
             
-            for (PrecompiledInstruction ins : preinstr)
-            {
-                int[] args = new int[ins.Arguments.size()];
-                int j = 0;
-                
-                for (Tuple<Integer, PrecompiledArgumentType> arg : ins.Arguments)
-                    args[j++] = arg.x;
-                
-                compiled[i++] = new MCPUInstruction(ins.Opcode, args);
-            }
+            for (Tuple<Integer, PrecompiledArgumentType> arg : ins.Arguments)
+                args[j++] = arg.x;
             
-            return new MCPUCompilerResult(compiled, null);
+            compiled[i++] = new MCPUInstruction(ins.Opcode, args);
         }
+        
+        return compiled;
     }
     
     private static void Error(HashMap<Integer, Integer> mapper, LinkedList<String> errors, int line, String msg)
@@ -165,7 +167,6 @@ public final class MCPUAssemblyCompiler
         
         errors.add("l." + (line + 1) + ": " + msg);
     }
-    
     
     private static Tuple<String[], HashMap<Integer, Integer>> CleanLines(String[] lines)
     {

@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,6 +15,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -23,6 +25,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.material.Lever;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import net.minecraft.server.v1_12_R1.ItemStack;
@@ -30,11 +33,14 @@ import net.minecraft.server.v1_12_R1.NBTTagCompound;
 import net.minecraft.server.v1_12_R1.NBTTagList;
 
 
+// Lamdas: finally java can do SOMETHING that .net could do since at least 1933.....
+
 public final class Main extends JavaPlugin implements Listener
 {
-    protected final HashMap<Integer, MCPUProcessor> cores = new HashMap<>();
-    protected final HashMap<Integer, MCPUBuildRegion> regions = new HashMap<>();
-    private final static int CPUSIZE = 3; // TODO fix
+    public static final LinkedList<Triplet<Integer, Integer, Integer>> pendingexplosions = new LinkedList<>();
+    public static final HashMap<Integer, MCPUBuildRegion> regions = new HashMap<>();
+    public static final HashMap<Integer, MCPUProcessor> cores = new HashMap<>(); 
+    private static final int CPUSIZE = 3; // TODO fix
     static String usagetext;
     static Logger log;
     
@@ -64,7 +70,7 @@ public final class Main extends JavaPlugin implements Listener
             synchronized (cores)
             {
                 for (MCPUProcessor c : cores.values())
-                    c.ExecuteNext();   
+                    c.ExecuteNext();
             }
         }, 1, 1);
     }
@@ -118,7 +124,7 @@ public final class Main extends JavaPlugin implements Listener
             {
                 case "?":
                 case "help":
-                    sender.sendMessage(ChatColor.YELLOW + usagetext);
+                    Print(sender, ChatColor.YELLOW, usagetext);
                     break;
                 case "add":
                 {
@@ -145,42 +151,41 @@ public final class Main extends JavaPlugin implements Listener
                         }
                         catch (Exception e)
                         {
-                            sender.sendMessage(ChatColor.RED + "You must provide valid x-, y- and z-corrdinates for the creation of a new core.");
+                            Print(sender, ChatColor.RED, "You must provide valid x-, y- and z-corrdinates for the creation of a new core.");
                             
                             break;
                         }
                     
-                        synchronized (cores)
-                        {
-                            double dist = (CPUSIZE + 2) * 2;
-                            
-                            for (int i : cores.keySet())
-                            {
-                                MCPUProcessor core = cores.get(i);
-                                Triplet<Integer, Integer, Integer> l = core.Location;
-                                
-                                if (Math.abs(l.y - y) < 3)
-                                    if (Math.sqrt(Math.pow(l.x - x, 2) + Math.pow(l.y - y, 2) + Math.pow(l.z - z, 2)) < dist)
-                                    {
-                                        sender.sendMessage(ChatColor.RED + "The new processor core cannot be placed here. It would be to close to existing core no. " + i + ".");
-                                        
-                                        canbuild = false;
-                                        
-                                        break;
-                                    }
-                            }
-                        }
+                    synchronized (cores)
+                    {
+                        double dist = (CPUSIZE + 2) * 2;
                         
-                        if (canbuild)
+                        for (int i : cores.keySet())
                         {
-                            Tuple<Integer, MCPUProcessor> t = SpawnCPU(player, x, y, z, CPUSIZE);
+                            MCPUProcessor core = cores.get(i);
+                            Triplet<Integer, Integer, Integer> l = core.Location;
                             
-                            // finally java can do SOMETHING that .net could do since at least 1933.....
-                            t.y.OnError = (p, s) -> sender.sendMessage(ChatColor.YELLOW + "Processor " + t.x + " failed with the folling message:\n" + s);
-                            
-                            sender.sendMessage(ChatColor.GREEN + "The core No. " + t.x + " has been created.");
+                            if (Math.abs(l.y - y) < 3)
+                                if (Math.sqrt(Math.pow(l.x - x, 2) + Math.pow(l.y - y, 2) + Math.pow(l.z - z, 2)) < dist)
+                                {
+                                    Print(sender, ChatColor.RED, "The new processor core cannot be placed here. It would be to close to existing core no. " + i + ".");
+                                    
+                                    canbuild = false;
+                                    
+                                    break;
+                                }
                         }
                     }
+                    
+                    if (canbuild)
+                    {
+                        Tuple<Integer, MCPUProcessor> t = SpawnCPU(player, x, y, z, CPUSIZE);
+                        
+                        t.y.OnError = (p, s) -> Print(sender, ChatColor.YELLOW, "Processor " + t.x + " failed with the folling message:\n" + s);
+                        
+                        Print(sender, ChatColor.GREEN, "The core No. " + t.x + " has been created.");
+                    }
+                }
                     break;
                 case "remove":
                     GetInt(args, 1, sender, i ->
@@ -196,7 +201,7 @@ public final class Main extends JavaPlugin implements Listener
                                 regions.remove(i);
                             }
                             else
-                                sender.sendMessage(ChatColor.RED + "The core No. " + i + " could not be found.");
+                                Print(sender, ChatColor.RED, "The core No. " + i + " could not be found.");
                         }
                     });
                     break;
@@ -227,7 +232,7 @@ public final class Main extends JavaPlugin implements Listener
                             CompileLoad(c, String.join("\n", book), sender);
                         }
                         else
-                            sender.sendMessage(ChatColor.RED + "You must be a player to run this command.");
+                            Print(sender, ChatColor.RED, "You must be a player to run this command.");
                     });
                     break;
                 case "loadu":
@@ -254,7 +259,7 @@ public final class Main extends JavaPlugin implements Listener
                             }
                             catch (Exception e)
                             {
-                                sender.sendMessage(ChatColor.RED + "The instructions could not be fetched from '" + url + "'.");
+                                Print(sender, ChatColor.RED, "The instructions could not be fetched from '" + url + "'.");
                             }
                     });
                     break;
@@ -367,7 +372,7 @@ public final class Main extends JavaPlugin implements Listener
         
         for (int i = -sdhl - 2; i <= sdhl + 2; ++i)
             for (int j = -sdhl - 2; j <= sdhl + 2; ++j)
-                for (int k = -1; k <= 3; ++k)
+                for (int k = 3; k >= -1; --k)
                     SetBlock(w, x + i, y + k, z + j, Material.AIR);
     }
     
@@ -390,7 +395,7 @@ public final class Main extends JavaPlugin implements Listener
             for (int i = -sdhl; i <= sdhl; ++i)
                 for (int j = -sdhl; j <= sdhl; ++j)
                     SetBlock(w, x + i, y, z + j, Material.WOOL, b -> b.setData(DyeColor.BLACK.getWoolData())); // TODO: fix deprecated calls
-
+                    
             SetBlock(w, x - sdhl, y, z - sdhl, Material.GOLD_BLOCK);
             SetBlock(w, x - sdhl + 1, y, z - sdhl, Material.GOLD_BLOCK);
             
@@ -413,8 +418,21 @@ public final class Main extends JavaPlugin implements Listener
                 SetBlock(w, x - sdhl - 2, y, z + j, Material.REDSTONE_WIRE);
                 SetBlock(w, x + sdhl + 2, y, z + j, Material.REDSTONE_WIRE);
             }
-
-            SetBlock(w, x - sdhl + 1, y + 1, z - sdhl, Material.LEVER, b -> b.setData((byte)0x07));
+            
+            SetBlock(w, x - sdhl + 1, y + 1, z - sdhl, Material.AIR, b ->
+            {
+                b.setType(Material.LEVER);
+                
+                Lever lever = (Lever)b.getState().getData();
+                
+                lever.setFacingDirection(BlockFace.UP);
+                lever.setPowered(true);
+                
+                b.getState().setData(lever);
+                // b.setData((byte)0b1111);
+                
+                b.getState().update();
+            });
             SetBlock(w, x - sdhl, y + 1, z - sdhl, Material.SIGN_POST, b ->
             {
                 Sign sign = (Sign)b.getState();
@@ -447,5 +465,18 @@ public final class Main extends JavaPlugin implements Listener
     private static void SetBlock(World w, int x, int y, int z, Material m, Consumer<Block> f)
     {
         f.accept(SetBlock(w, x, y, z, m));
+    }
+    
+    public static void Print(ChatColor c, String m)
+    {
+        Print(null, c, m);
+    }
+    
+    public static void Print(CommandSender s, ChatColor c, String m)
+    {
+        if (s != null)
+            s.sendMessage(c + m);
+        
+        log.log(Level.INFO, c + m);
     }
 }

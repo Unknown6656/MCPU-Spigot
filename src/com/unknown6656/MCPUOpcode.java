@@ -36,8 +36,10 @@ public abstract class MCPUOpcode
             // and NO, your fucking package 'java.lang.shit.reflection' IS NOT FUCKING REFLECTION !!! THATS BINARY SHITTING.
             // I'm hardcoding a list here for now ...... fucking java
             // Biggest piece of shit I ever had to write .......
-            final String instr = "Add And Br Brtrue Brfalse Call Div Decr Halt Incr Ldarg Ldc Ldio Ldloc Ldmem Mod " +
-                                 "Mov Mul Neg Not Nop Or Regloc Ret Rol Ror Shl Shr Starg Stio Stiodir Stloc Stmem Sub Swap Xor";
+            final String instr = "Abk Add And Br Brtrue Brfalse Call Div Decr Dup Eq Exp Geq Halt Incr " +
+                                 "Ldarg Ldc Ldio Ldloc Ldmem Leq Log Log2 Log10 Mod Mov Mul Neg Neq Not Nop Or " +
+                                 "Pow Regloc Ret Rol Ror Shl Shr Sign Starg Stio Stiodir Stloc Stmem " +
+                                 "Sub Swap Syscall Xor";
             // Dear Microsoft,
             // Please buy Oracle company (or maybe don't, because your stock market value will crash)
             // and make the usage and development of/with Java illegal. (or at least ship a virus with the next jre-release)
