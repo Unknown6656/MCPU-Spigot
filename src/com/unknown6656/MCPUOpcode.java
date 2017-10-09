@@ -18,6 +18,7 @@ public abstract class MCPUOpcode
         
         try
         {
+            // This will fail, because java is bitchy...
             Reflections reflections = new Reflections(pack);
             
             for (Class<? extends MCPUOpcode> stype : reflections.getSubTypesOf(MCPUOpcode.class))
@@ -31,13 +32,15 @@ public abstract class MCPUOpcode
         }
         catch (NoClassDefFoundError e)
         {
-            // We have to do this shit manually
+            // We have to do this shit manually because java does not have reflection.
+            // and NO, your fucking package 'java.lang.shit.reflection' IS NOT FUCKING REFLECTION !!! THATS BINARY SHITTING.
             // I'm hardcoding a list here for now ...... fucking java
             // Biggest piece of shit I ever had to write .......
-            final String instr = "Add And Br Brtrue Brfalse Call Div Decr Halt Incr Ldarg Ldc Ldmem Mod Mov Mul Neg Not Nop Or Ret Starg Stmem Sub Swap Xor";
+            final String instr = "Add And Br Brtrue Brfalse Call Div Decr Halt Incr Ldarg Ldc Ldio Ldloc Ldmem Mod " +
+                                 "Mov Mul Neg Not Nop Or Regloc Ret Rol Ror Shl Shr Starg Stio Stiodir Stloc Stmem Sub Swap Xor";
             // Dear Microsoft,
             // Please buy Oracle company (or maybe don't, because your stock market value will crash)
-            // and make the usage and development of/with Java illegal.
+            // and make the usage and development of/with Java illegal. (or at least ship a virus with the next jre-release)
             // Thank you.
             
             for (String name : instr.split(" "))

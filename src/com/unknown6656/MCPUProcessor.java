@@ -6,9 +6,16 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.bukkit.entity.Player;
+
+import net.minecraft.server.v1_12_R1.BlockStateInteger;
+
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
+import org.bukkit.craftbukkit.v1_12_R1.util.CraftMagicNumbers;
 
 
 public final class MCPUProcessor
@@ -18,6 +25,7 @@ public final class MCPUProcessor
     private final int[] memory = new int[4096];
     private MCPUInstruction[] instructions;
     private final int sideoffset;
+    private final int sidecount;
     private boolean canrun;
     private int ticks;
     
@@ -41,6 +49,7 @@ public final class MCPUProcessor
         this.Location = new Triplet<Integer, Integer, Integer>(x, y, z);
         this.sideoffset = (count / 2 /* Integer division */) * 2;
         this.ioports = new ArrayList<>(4 * count);
+        this.sidecount = count;
         this.Creator = creator;
         this.World = world;
         
@@ -62,7 +71,7 @@ public final class MCPUProcessor
         instructions = new MCPUInstruction[0];
         InstructionPointer = -1;
         callstack.clear();
-
+        
         GetSign(s -> s.setLine(2, ""));
         SetTicks(0);
         ClearMemory();
@@ -87,7 +96,7 @@ public final class MCPUProcessor
     
     public synchronized boolean CanExecuteNext()
     {
-        return canrun && (instructions.length > 0) && (InstructionPointer < instructions.length);
+        return canrun && IsEnabled() && (instructions.length > 0) && (InstructionPointer < instructions.length);
     }
     
     public synchronized void ExecuteNext()
@@ -122,6 +131,18 @@ public final class MCPUProcessor
                 {
                     Failwith("The execution of the instruction '" + current + "' failed due to the following reason:\n" + e.getMessage());
                 }
+                
+                if (InstructionPointer < instructions.length)
+                {
+                    current = instructions[InstructionPointer];
+                            
+                    if (current != null)
+                    {
+                        MCPUOpcode opc = current.GetOPCode();
+
+                        GetSign(s -> s.setLine(2, opc.toString()));
+                    }
+                }   
             }
             
             SetTicks(ticks + 1);
@@ -163,14 +184,80 @@ public final class MCPUProcessor
         return CheckIOExists(port, p -> p.y);
     }
     
-    public void SetIO(int port, byte value)
+    public void SetIO(int port, int value)
     {
-        CheckIOExists(port, p -> p.x = value);
+        CheckIOExists(port, p ->
+        {
+            p.x = (byte)Math.max(0, Math.min(value, 15));
+            
+            // Block b = GetIOPortAdjacent(port).getBlock();
+            //
+            // if (b.getType() == Material.REDSTONE_WIRE)
+            // CraftMagicNumbers.getBlock(b).getBlockData().get(BlockStateInteger.of("power", 0, p.x));
+            Location l1 = GetIOPortAdjacent(port);
+            Location l2 = l1.clone();
+
+            if (port < sidecount)
+                l1.add(0, 0, 1);
+            else if (port < 2 * sidecount)
+                l1.add(-1, 0, 0);
+            else if (port < 3 * sidecount)
+                l1.add(0, 0, -1);
+            else
+                l1.add(1, 0, 0);
+
+            l1.getBlock().setType(value != 0 ? Material.REDSTONE_BLOCK : Material.IRON_BLOCK);
+            l2.getBlock().setType(value != 0 ? Material.REDSTONE_BLOCK : Material.IRON_BLOCK);
+            
+            return null;
+        });
     }
     
     public int GetIO(int port)
     {
-        return (int)CheckIOExists(port, p -> p.x);
+        return (int)CheckIOExists(port, p ->
+        {
+            Block b = GetIOPortAdjacent(port).getBlock();
+            BlockState s = b.getState();
+            
+            s.update();
+            
+            p.x = (byte)Math.max(0, Math.min(b.getBlockPower(), 15));
+            
+            return p.x;
+        });
+    }
+    
+    private Location GetIOPortAdjacent(int port)
+    {
+        int x = Location.x - sideoffset;
+        int y = Location.y;
+        int z = Location.z - sideoffset;
+        
+        if (port < sidecount)
+        {
+            x += 2 * port;
+            z -= 2;
+        }
+        else if ((port -= sidecount) < sidecount)
+        {
+            x += sidecount * 2;
+            z += 2 * port;
+        }
+        else if ((port -= sidecount) < sidecount)
+        {
+            x += 2 * (sidecount - port - 1);
+            z += sidecount * 2;
+        }
+        else
+        {
+            port -= sidecount;
+            
+            x -= 2;
+            z += 2 * (sidecount - port - 1);
+        }
+        
+        return new Location(World, x, y, z);
     }
     
     private <T> T CheckIOExists(int port, Function<Tuple<Byte, Boolean>, T> callback)
@@ -197,6 +284,11 @@ public final class MCPUProcessor
         canrun = true;
         
         Raise(OnStart, null);
+    }
+    
+    public void Restart()
+    {
+        Load(instructions);
     }
     
     public void Load(MCPUInstruction[] instr)
@@ -263,7 +355,7 @@ public final class MCPUProcessor
     
     public String StatusString()
     {
-        return String.format("(%d|%d|%d) created by %s (%s), %s", Location.x, Location.y, Location.z, Creator.getDisplayName(), Creator.getAddress().toString(), canrun ? "running" : "halted");
+        return String.format("(%d|%d|%d) created by %s (%s), %s, %s", Location.x, Location.y, Location.z, Creator.getDisplayName(), Creator.getAddress().toString(), canrun ? "running" : "halted", IsEnabled() ? "enabled" : "disabled");
     }
     
     public String AssemblyInstructions()
@@ -275,5 +367,12 @@ public final class MCPUProcessor
                 sb.append(ins + "\n");
             
         return sb.toString().trim();
+    }
+
+    public boolean IsEnabled()
+    {
+        Block b = World.getBlockAt(Location.x - sideoffset + 1, Location.y + 1, Location.z - sideoffset);
+
+        return b.isBlockPowered() || (b.getBlockPower() != 0);
     }
 }

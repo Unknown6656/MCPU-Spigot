@@ -5,21 +5,20 @@ import com.unknown6656.MCPUOpcode;
 import com.unknown6656.MCPUProcessor;
 
 
-public final class Stmem extends MCPUOpcode
-{   
-    // stmem addr val
+public final class Ldio extends MCPUOpcode
+{
     @Override
-    public final int MinimumStackSize()
+    public int MinimumStackSize()
     {
-        return 2;
+        return 1;
     }
     
     @Override
     public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
-        int val = frame.Pop();
-        int addr = frame.Pop();
+        int port = frame.Pop();
+        int value = proc.GetIO(port);
         
-        proc.Memory(addr, val);
+        frame.Push(value);
     }
 }

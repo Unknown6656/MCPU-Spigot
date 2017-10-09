@@ -5,21 +5,25 @@ import com.unknown6656.MCPUOpcode;
 import com.unknown6656.MCPUProcessor;
 
 
-public final class Stmem extends MCPUOpcode
-{   
-    // stmem addr val
+public final class Stloc extends MCPUOpcode
+{
     @Override
-    public final int MinimumStackSize()
+    public int MinimumArgumentCount()
     {
-        return 2;
+        return 1;
+    }
+    
+    @Override
+    public int MinimumStackSize()
+    {
+        return 1;
     }
     
     @Override
     public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
-        int val = frame.Pop();
-        int addr = frame.Pop();
+        int local = frame.Pop();
         
-        proc.Memory(addr, val);
+        frame.Locals[arguments[0]] = local;
     }
 }

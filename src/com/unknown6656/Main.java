@@ -51,6 +51,7 @@ public final class Main extends JavaPlugin implements Listener
                     "  loadu <n> <u>   - Loads the string acessible via the given HTTP URI u into the core No. n\n" +
                     "  start <n>       - Starts the processor core No. n\n" +
                     "  stop <n>        - Halts the core No. n\n" +
+                    "  next <n>        - Forces the execution of the next instruction of core No. n" +
                     "  reset <n>       - Halts and resets the core No. n\n" +
                     "  state <n>       - Displays the state of core No. n";
         
@@ -58,6 +59,14 @@ public final class Main extends JavaPlugin implements Listener
         log.log(Level.INFO, MCPUOpcode.Opcodes.size() + " instructions loaded!");
         
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getScheduler().scheduleSyncRepeatingTask(this, () ->
+        {
+            synchronized (cores)
+            {
+                for (MCPUProcessor c : cores.values())
+                    c.ExecuteNext();   
+            }
+        }, 1, 1);
     }
     
     @Override
@@ -81,7 +90,7 @@ public final class Main extends JavaPlugin implements Listener
                     event.getPlayer().sendMessage(ChatColor.RED + "You cannot place a block on a registered CPU core.");
             }
     }
-
+    
     @EventHandler
     public void onBlockBreakEvent(BlockBreakEvent event)
     {
@@ -141,37 +150,37 @@ public final class Main extends JavaPlugin implements Listener
                             break;
                         }
                     
-                    synchronized (cores)
-                    {
-                        double dist = (CPUSIZE + 2) * 2;
-                        
-                        for (int i : cores.keySet())
+                        synchronized (cores)
                         {
-                            MCPUProcessor core = cores.get(i);
-                            Triplet<Integer, Integer, Integer> l = core.Location;
+                            double dist = (CPUSIZE + 2) * 2;
                             
-                            if (Math.abs(l.y - y) < 3)
-                                if (Math.sqrt(Math.pow(l.x - x, 2) + Math.pow(l.y - y, 2) + Math.pow(l.z - z, 2)) < dist)
-                                {
-                                    sender.sendMessage(ChatColor.RED + "The new processor core cannot be placed here. It would be to close to existing core no. " + i + ".");
-                                    
-                                    canbuild = false;
-                                    
-                                    break;
-                                }
+                            for (int i : cores.keySet())
+                            {
+                                MCPUProcessor core = cores.get(i);
+                                Triplet<Integer, Integer, Integer> l = core.Location;
+                                
+                                if (Math.abs(l.y - y) < 3)
+                                    if (Math.sqrt(Math.pow(l.x - x, 2) + Math.pow(l.y - y, 2) + Math.pow(l.z - z, 2)) < dist)
+                                    {
+                                        sender.sendMessage(ChatColor.RED + "The new processor core cannot be placed here. It would be to close to existing core no. " + i + ".");
+                                        
+                                        canbuild = false;
+                                        
+                                        break;
+                                    }
+                            }
+                        }
+                        
+                        if (canbuild)
+                        {
+                            Tuple<Integer, MCPUProcessor> t = SpawnCPU(player, x, y, z, CPUSIZE);
+                            
+                            // finally java can do SOMETHING that .net could do since at least 1933.....
+                            t.y.OnError = (p, s) -> sender.sendMessage(ChatColor.YELLOW + "Processor " + t.x + " failed with the folling message:\n" + s);
+                            
+                            sender.sendMessage(ChatColor.GREEN + "The core No. " + t.x + " has been created.");
                         }
                     }
-                    
-                    if (canbuild)
-                    {
-                        Tuple<Integer, MCPUProcessor> t = SpawnCPU(player, x, y, z, CPUSIZE);
-                        
-                        // finally java can do SOMETHING that .net could do since at least 1933.....
-                        t.y.OnError = (p, s) -> sender.sendMessage(ChatColor.YELLOW + "Processor " + t.x + " failed with the folling message:\n" + s);
-                        
-                        sender.sendMessage(ChatColor.GREEN + "The core No. " + t.x + " has been created.");
-                    }
-                }
                     break;
                 case "remove":
                     GetInt(args, 1, sender, i ->
@@ -199,6 +208,9 @@ public final class Main extends JavaPlugin implements Listener
                     break;
                 case "start":
                     GetCore(args, 1, sender, c -> c.Start());
+                    break;
+                case "next":
+                    GetCore(args, 1, sender, c -> c.ExecuteNext());
                     break;
                 case "loadb":
                     GetCore(args, 1, sender, c ->
@@ -368,7 +380,6 @@ public final class Main extends JavaPlugin implements Listener
         {
             int num = cores.size();
             int sdhl = (size / 2 /* Integer division */) * 2;
-            int sidelength = sdhl * 2 + 1;
             
             DeleteCPU(w, x, y, z, size);
             
@@ -381,19 +392,29 @@ public final class Main extends JavaPlugin implements Listener
                     SetBlock(w, x + i, y, z + j, Material.WOOL, b -> b.setData(DyeColor.BLACK.getWoolData())); // TODO: fix deprecated calls
 
             SetBlock(w, x - sdhl, y, z - sdhl, Material.GOLD_BLOCK);
+            SetBlock(w, x - sdhl + 1, y, z - sdhl, Material.GOLD_BLOCK);
             
             for (int i = -sdhl; i <= sdhl; i += 2)
             {
                 SetBlock(w, x + i, y, z - sdhl - 1, Material.IRON_BLOCK);
                 SetBlock(w, x + i, y, z + sdhl + 1, Material.IRON_BLOCK);
+                SetBlock(w, x + i, y - 1, z - sdhl - 2, Material.IRON_BLOCK);
+                SetBlock(w, x + i, y - 1, z + sdhl + 2, Material.IRON_BLOCK);
+                SetBlock(w, x + i, y, z - sdhl - 2, Material.REDSTONE_WIRE);
+                SetBlock(w, x + i, y, z + sdhl + 2, Material.REDSTONE_WIRE);
             }
             
             for (int j = -sdhl; j <= sdhl; j += 2)
             {
                 SetBlock(w, x - sdhl - 1, y, z + j, Material.IRON_BLOCK);
                 SetBlock(w, x + sdhl + 1, y, z + j, Material.IRON_BLOCK);
+                SetBlock(w, x - sdhl - 2, y - 1, z + j, Material.IRON_BLOCK);
+                SetBlock(w, x + sdhl + 2, y - 1, z + j, Material.IRON_BLOCK);
+                SetBlock(w, x - sdhl - 2, y, z + j, Material.REDSTONE_WIRE);
+                SetBlock(w, x + sdhl + 2, y, z + j, Material.REDSTONE_WIRE);
             }
-            
+
+            SetBlock(w, x - sdhl + 1, y + 1, z - sdhl, Material.LEVER, b -> b.setData((byte)0x07));
             SetBlock(w, x - sdhl, y + 1, z - sdhl, Material.SIGN_POST, b ->
             {
                 Sign sign = (Sign)b.getState();
