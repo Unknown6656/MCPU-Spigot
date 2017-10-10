@@ -38,7 +38,25 @@ namespace MCPUCompiler
                 instructions = (from entry in zip.Entries
                                 where entry.FullName.ToLower().Replace('\\', '/').StartsWith(OPCODE_PATH)
                                 select entry.Name).ToArray();
-            
+
+            using (Compiler cmp = new Compiler(instructions))
+            {
+                string code = File.ReadAllText(dic["in"]);
+                CompilerResult result = cmp.Compile(code);
+
+                if (result.Success)
+                {
+                    "The compilation was successful. Generated instructions:".Print(Red);
+
+                    // TODO
+                }
+                else
+                {
+                    "The compiler could not compile the input file due to the follwing reason(s):".Print(Red);
+
+                    // TODO
+                }
+            }
         }
 
         private static Dictionary<string, string> CheckRequirements(string[] args)
