@@ -1,9 +1,9 @@
-package com.unknown6656.opcodes;
+package com.unknown6656;
 
 import java.util.function.BiFunction;
 
 
-class BinaryBooleanOpcode extends BinaryOpcode
+public class BinaryBooleanOpcode extends BinaryOpcode
 {
     public BinaryBooleanOpcode(BiFunction<Integer, Integer, Boolean> func)
     {

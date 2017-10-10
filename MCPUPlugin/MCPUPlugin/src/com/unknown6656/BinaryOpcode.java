@@ -1,18 +1,14 @@
-package com.unknown6656.opcodes;
+package com.unknown6656;
 
-import java.util.function.Function;
-
-import com.unknown6656.MCPUCallframe;
-import com.unknown6656.MCPUOpcode;
-import com.unknown6656.MCPUProcessor;
+import java.util.function.BiFunction;
 
 
-class UnaryOpcode extends MCPUOpcode
+public class BinaryOpcode extends MCPUOpcode
 {
-    private Function<Integer, Integer> function;
+    private BiFunction<Integer, Integer, Integer> function;
     
     
-    public UnaryOpcode(Function<Integer, Integer> func)
+    public BinaryOpcode(BiFunction<Integer, Integer, Integer> func)
     {
         function = func;
     }
@@ -20,7 +16,7 @@ class UnaryOpcode extends MCPUOpcode
     @Override
     public final int MinimumStackSize()
     {
-        return 1;
+        return 2;
     }
     
     @Override
@@ -32,8 +28,9 @@ class UnaryOpcode extends MCPUOpcode
     @Override
     public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
+        int y = frame.Pop();
         int x = frame.Pop();
-        int res = function.apply(x);
+        int res = function.apply(x, y);
         
         frame.Push(res);
     }

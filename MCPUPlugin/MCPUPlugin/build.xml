@@ -6,6 +6,10 @@
             <fileset dir="bin"></fileset>
             <fileset file="plugin.yml"></fileset>
         </jar>
+        <jar destfile="../../MCPUCompiler/Resources/${ant.project.name}.jar">
+            <fileset dir="bin"></fileset>
+            <fileset file="plugin.yml"></fileset>
+        </jar>
         <jar destfile="L:/Projects.Java/Spigot/BuildTools/plugins/${ant.project.name}.jar">
             <fileset dir="bin"></fileset>
             <fileset file="plugin.yml"></fileset>
