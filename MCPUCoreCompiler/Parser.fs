@@ -3,6 +3,8 @@
 open System.Globalization
 open Piglet.Parser
 open Util
+open System.Net.Sockets
+open System.ComponentModel.Design
 
 
 let conf = ParserFactory.Configure<obj>()
@@ -25,6 +27,8 @@ let statementList             = nterm<Statement list>()
 let statement                 = nterm<Statement>()
 let expressionStatement       = nterm<ExpressionStatement>()
 let whileStatement            = nterm<WhileStatement>()
+let forStatement              = nterm<ForStatement>()
+let asmStatement              = nterm<string>()
 let compoundStatement         = nterm<CompoundStatement>()
 let optionalLocalDeclarations = nterm<VariableDeclaration list>()
 let localDeclarations         = nterm<VariableDeclaration list>()
@@ -33,6 +37,7 @@ let ifStatement               = nterm<IfStatement>()
 let optionalElseStatement     = nterm<Statement option>()
 let returnStatement           = nterm<Expression option>()
 let breakStatement            = nterm<unit>()
+let haltStatement             = nterm<unit>()
 let expression                = nterm<Expression>()
 let unaryOperator             = nterm<UnaryOperator>()
 let optionalArguments         = nterm<Arguments>()
@@ -64,6 +69,7 @@ let returnKeyword    = term  "return"
 let breakKeyword     = term  "break"
 let haltKeyword      = term  "halt"
 let abkKeyword       = term  "abk"
+let forKeyword       = term  "for"
 let newKeyword       = term  "new"
 let sizeKeyword      = term  "length"
 let asmKeyword       = term  "__asm"
@@ -147,5 +153,78 @@ let reduce3 (s : NonTerminalWrapper<'a>) a b c x = s.AddProduction(a, b, c).SetR
 let reduce4 (s : NonTerminalWrapper<'a>) a b c d x = s.AddProduction(a, b, c, d).SetReduceFunction x
 let reduce5 (s : NonTerminalWrapper<'a>) a b c d e x = s.AddProduction(a, b, c, d, e).SetReduceFunction x
 let reduce6 (s : NonTerminalWrapper<'a>) a b c d e f x = s.AddProduction(a, b, c, d, e, f).SetReduceFunction x
+let reducelist (listtype : NonTerminalWrapper<'a list>) separator element =
+    reduce3 listtype listtype separator element (fun l _ e -> l @ [e])
+    reduce1 listtype element (fun e -> [e])
+let reduceclist (listtype : NonTerminalWrapper<'a list>) element =
+    reduce2 listtype listtype element (fun l e -> l @ [e])
+    reduce1 listtype element (fun e -> [e])
 
 
+reduce0 program declarationList
+
+reduceclist declarationList declaration
+
+reduce1 declaration staticVariableDeclaration GlobalVariableDeclaration
+reduce1 declaration functionDeclaration FunctionDeclaration
+
+reduce3 staticVariableDeclaration typeSpec identifier semicolon (fun t i _ -> (t, i))
+reduce6 functionDeclaration typeSpec identifier openParen parameters closeParen compoundStatement (fun t i _ p _ c -> (t, i, p, c))
+
+reduce0 parameters parameterList
+reduce1 parameters voidKeyword (fun _ -> [])
+
+reducelist parameterList comma parameter
+
+reduce2 parameter typeSpec identifier (fun t i -> (t, i))
+
+reduce0 optionalStatementList statementList
+reducef optionalStatementList (fun () -> [])
+
+reduceclist statementList statement
+
+reduce1 statement expressionStatement ExpressionStatement
+reduce1 statement compoundStatement CompoundStatement
+reduce1 statement ifStatement IfStatement
+reduce1 statement forStatement ForStatement
+reduce1 statement whileStatement WhileStatement
+reduce1 statement returnStatement ReturnStatement
+reduce1 statement breakStatement (fun _ -> BreakStatement)
+reduce1 statement haltStatement (fun _ -> HaltStatement)
+reduce1 statement asmStatement InlineAssemblyStatement
+
+reduce2 expressionStatement expression semicolon (fun e _ -> Expression e)
+reduce1 expressionStatement semicolon (fun _ -> Nop)
+
+reduce4 compoundStatement openCurly optionalLocalDeclarations optionalStatementList closeCurly (fun _ l s _ -> (l, s))
+
+reduce5 whileStatement whileKeyword openParen expression closeParen statement (fun _ _ e _ s -> (e, s))
+
+reduce0 optionalLocalDeclarations localDeclarations
+reducef optionalLocalDeclarations (fun () -> [])
+
+reduceclist localDeclarations localDeclaration
+
+reduce3 localDeclaration typeSpec identifier semicolon (fun t i _ -> (t, i))
+
+reduce6 ifStatement ifKeyword openParen expression closeParen statement optionalElseStatement (fun _ _ e _ s o -> (e, s, o))
+
+let elseStatementProduction = optionalElseStatement.AddProduction(elseKeyword, statement)
+let elseEpsilonProduction = optionalElseStatement.AddProduction()
+
+elseStatementProduction.SetReduceFunction (fun _ b -> Some b)
+elseStatementProduction.SetPrecedence prec_optelse
+
+elseEpsilonProduction.SetReduceFunction (fun () -> None)
+elseEpsilonProduction.SetPrecedence prec_optelse
+
+reduce3 returnStatement returnKeyword expression semicolon (fun _ e _ -> Some e)
+reduce2 returnStatement returnKeyword semicolon (fun _ _ -> None)
+
+
+
+
+
+reduce1 typeSpec voidKeyword (fun _ -> Void)
+reduce0 typeSpec boolKeyword
+reduce0 typeSpec intKeyword
