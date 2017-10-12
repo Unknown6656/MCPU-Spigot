@@ -256,6 +256,7 @@ paket-files/
 *tasks.xml.zip
 *.class
 org.eclipse.e4.workbench/
+.indexes/
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
