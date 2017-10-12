@@ -26,47 +26,32 @@ type ProductionWrapper<'a,'b,'T> (production : IProduction<obj>) =
 type ProductionWrapper<'a,'b,'c,'T> (production : IProduction<obj>) =
     inherit ProductionWrapperBase(production)
     member x.SetReduceFunction (f : ('a -> 'b -> 'c -> 'T)) =
-        production.SetReduceFunction (fun o -> box (f (unbox o.[0])
-                                                      (unbox o.[1])
-                                                      (unbox o.[2])))
+        production.SetReduceFunction (fun o -> box (f (unbox o.[0]) (unbox o.[1]) (unbox o.[2])))
 
 type ProductionWrapper<'a,'b,'c,'d,'T> (production : IProduction<obj>) =
     inherit ProductionWrapperBase(production)
     member x.SetReduceFunction (f : ('a -> 'b -> 'c -> 'd -> 'T)) =
-        production.SetReduceFunction (fun o -> box (f (unbox o.[0])
-                                                      (unbox o.[1])
-                                                      (unbox o.[2])
-                                                      (unbox o.[3])))
+        production.SetReduceFunction (fun o -> box (f (unbox o.[0]) (unbox o.[1]) (unbox o.[2]) (unbox o.[3])))
 
 type ProductionWrapper<'a,'b,'c,'d,'e,'T> (production : IProduction<obj>) =
     inherit ProductionWrapperBase(production)
     member x.SetReduceFunction (f : ('a -> 'b -> 'c -> 'd -> 'e -> 'T)) =
-        production.SetReduceFunction (fun o -> box (f (unbox o.[0])
-                                                      (unbox o.[1])
-                                                      (unbox o.[2])
-                                                      (unbox o.[3])
-                                                      (unbox o.[4])))
+        production.SetReduceFunction (fun o -> box (f (unbox o.[0]) (unbox o.[1]) (unbox o.[2]) (unbox o.[3]) (unbox o.[4])))
 
 type ProductionWrapper<'a,'b,'c,'d,'e,'f,'T> (production : IProduction<obj>) =
     inherit ProductionWrapperBase(production)
     member x.SetReduceFunction (f : ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'T)) =
-        production.SetReduceFunction (fun o -> box (f (unbox o.[0])
-                                                      (unbox o.[1])
-                                                      (unbox o.[2])
-                                                      (unbox o.[3])
-                                                      (unbox o.[4])
-                                                      (unbox o.[5])))
+        production.SetReduceFunction (fun o -> box (f (unbox o.[0]) (unbox o.[1]) (unbox o.[2]) (unbox o.[3]) (unbox o.[4]) (unbox o.[5])))
 
 type ProductionWrapper<'a,'b,'c,'d,'e,'f,'g,'T> (production : IProduction<obj>) =
     inherit ProductionWrapperBase(production)
     member x.SetReduceFunction (f : ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'T)) =
-        production.SetReduceFunction (fun o -> box (f (unbox o.[0])
-                                                      (unbox o.[1])
-                                                      (unbox o.[2])
-                                                      (unbox o.[3])
-                                                      (unbox o.[4])
-                                                      (unbox o.[5])
-                                                      (unbox o.[6])))
+        production.SetReduceFunction (fun o -> box (f (unbox o.[0]) (unbox o.[1]) (unbox o.[2]) (unbox o.[3]) (unbox o.[4]) (unbox o.[5]) (unbox o.[6])))
+
+type ProductionWrapper<'a,'b,'c,'d,'e,'f,'g, 'h,'T> (production : IProduction<obj>) =
+    inherit ProductionWrapperBase(production)
+    member x.SetReduceFunction (f : ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'T)) =
+        production.SetReduceFunction (fun o -> box (f (unbox o.[0]) (unbox o.[1]) (unbox o.[2]) (unbox o.[3]) (unbox o.[4]) (unbox o.[5]) (unbox o.[6]) (unbox o.[7])))
 
 type SymbolWrapper<'T> (symbol : ISymbol<obj>) =
     member x.Symbol = symbol
@@ -76,75 +61,43 @@ type TerminalWrapper<'T> (terminal : ITerminal<obj>) =
 
 type NonTerminalWrapper<'T> (nonTerminal : INonTerminal<obj>) =
     inherit SymbolWrapper<'T>(nonTerminal)
-
+    
     member x.AddProduction () =
-        let production = nonTerminal.AddProduction()
-        new ProductionWrapper<'T>(production)
+        nonTerminal.AddProduction()
+        |> ProductionWrapper<'T>
+        
+    member x.AddProduction (p : SymbolWrapper<'a>) =
+        nonTerminal.AddProduction p.Symbol
+        |> ProductionWrapper<'a,'T>
     
-    member x.AddProduction (part : SymbolWrapper<'a>) =
-        let production = nonTerminal.AddProduction(part.Symbol)
-        new ProductionWrapper<'a,'T>(production)
-    
-    member x.AddProduction((part1 : SymbolWrapper<'a>), (part2 : SymbolWrapper<'b>)) =
-        let production = nonTerminal.AddProduction(part1.Symbol, part2.Symbol)
-        new ProductionWrapper<'a,'b,'T>(production)
+    member x.AddProduction((p1 : SymbolWrapper<'a>), (p2 : SymbolWrapper<'b>)) =
+        nonTerminal.AddProduction(p1.Symbol, p2.Symbol)
+        |> ProductionWrapper<'a,'b,'T>
 
-    member x.AddProduction((part1 : SymbolWrapper<'a>),
-                           (part2 : SymbolWrapper<'b>),
-                           (part3 : SymbolWrapper<'c>)) =
-        let production = nonTerminal.AddProduction(part1.Symbol,
-                                                   part2.Symbol,
-                                                   part3.Symbol)
-        new ProductionWrapper<'a,'b,'c,'T>(production)
+    member x.AddProduction ((p1 : SymbolWrapper<'a>), (p2 : SymbolWrapper<'b>), (p3 : SymbolWrapper<'c>)) =
+        nonTerminal.AddProduction(p1.Symbol, p2.Symbol, p3.Symbol)
+        |> ProductionWrapper<'a,'b,'c,'T>
 
-    member x.AddProduction((part1 : SymbolWrapper<'a>),
-                           (part2 : SymbolWrapper<'b>),
-                           (part3 : SymbolWrapper<'c>),
-                           (part4 : SymbolWrapper<'d>)) =
-        let production = nonTerminal.AddProduction(part1.Symbol,
-                                                   part2.Symbol,
-                                                   part3.Symbol,
-                                                   part4.Symbol)
-        new ProductionWrapper<'a,'b,'c,'d,'T>(production)
+    member x.AddProduction((p1 : SymbolWrapper<'a>), (p2 : SymbolWrapper<'b>), (p3 : SymbolWrapper<'c>), (p4 : SymbolWrapper<'d>)) =
+        nonTerminal.AddProduction(p1.Symbol, p2.Symbol, p3.Symbol, p4.Symbol)
+        |> ProductionWrapper<'a,'b,'c,'d,'T>
 
-    member x.AddProduction((part1 : SymbolWrapper<'a>),
-                           (part2 : SymbolWrapper<'b>),
-                           (part3 : SymbolWrapper<'c>),
-                           (part4 : SymbolWrapper<'d>),
-                           (part5 : SymbolWrapper<'e>)) =
-        let production = nonTerminal.AddProduction(part1.Symbol,
-                                                   part2.Symbol,
-                                                   part3.Symbol,
-                                                   part4.Symbol,
-                                                   part5.Symbol)
-        new ProductionWrapper<'a,'b,'c,'d,'e,'T>(production)
+    member x.AddProduction((p1 : SymbolWrapper<'a>), (p2 : SymbolWrapper<'b>), (p3 : SymbolWrapper<'c>),
+                           (p4 : SymbolWrapper<'d>), (p5 : SymbolWrapper<'e>)) =
+        nonTerminal.AddProduction(p1.Symbol, p2.Symbol, p3.Symbol, p4.Symbol, p5.Symbol)
+        |> ProductionWrapper<'a,'b,'c,'d,'e,'T>
 
-    member x.AddProduction((part1 : SymbolWrapper<'a>),
-                           (part2 : SymbolWrapper<'b>),
-                           (part3 : SymbolWrapper<'c>),
-                           (part4 : SymbolWrapper<'d>),
-                           (part5 : SymbolWrapper<'e>),
-                           (part6 : SymbolWrapper<'f>)) =
-        let production = nonTerminal.AddProduction(part1.Symbol,
-                                                   part2.Symbol,
-                                                   part3.Symbol,
-                                                   part4.Symbol,
-                                                   part5.Symbol,
-                                                   part6.Symbol)
-        new ProductionWrapper<'a,'b,'c,'d,'e,'f,'T>(production)
+    member x.AddProduction((p1 : SymbolWrapper<'a>), (p2 : SymbolWrapper<'b>), (p3 : SymbolWrapper<'c>), (p4 : SymbolWrapper<'d>),
+                           (p5 : SymbolWrapper<'e>), (p6 : SymbolWrapper<'f>)) =
+        nonTerminal.AddProduction(p1.Symbol, p2.Symbol, p3.Symbol, p4.Symbol, p5.Symbol, p6.Symbol)
+        |> ProductionWrapper<'a,'b,'c,'d,'e,'f,'T>
 
-    member x.AddProduction((part1 : SymbolWrapper<'a>),
-                           (part2 : SymbolWrapper<'b>),
-                           (part3 : SymbolWrapper<'c>),
-                           (part4 : SymbolWrapper<'d>),
-                           (part5 : SymbolWrapper<'e>),
-                           (part6 : SymbolWrapper<'f>),
-                           (part7 : SymbolWrapper<'g>)) =
-        let production = nonTerminal.AddProduction(part1.Symbol,
-                                                   part2.Symbol,
-                                                   part3.Symbol,
-                                                   part4.Symbol,
-                                                   part5.Symbol,
-                                                   part6.Symbol,
-                                                   part7.Symbol)
-        new ProductionWrapper<'a,'b,'c,'d,'e,'f,'g,'T>(production)
+    member x.AddProduction((p1 : SymbolWrapper<'a>), (p2 : SymbolWrapper<'b>), (p3 : SymbolWrapper<'c>), (p4 : SymbolWrapper<'d>),
+                           (p5 : SymbolWrapper<'e>), (p6 : SymbolWrapper<'f>), (p7 : SymbolWrapper<'g>)) =
+        nonTerminal.AddProduction(p1.Symbol, p2.Symbol, p3.Symbol, p4.Symbol, p5.Symbol, p6.Symbol, p7.Symbol)
+        |> ProductionWrapper<'a,'b,'c,'d,'e,'f,'g,'T>
+        
+    member x.AddProduction((p1 : SymbolWrapper<'a>), (p2 : SymbolWrapper<'b>), (p3 : SymbolWrapper<'c>), (p4 : SymbolWrapper<'d>),
+                           (p5 : SymbolWrapper<'e>), (p6 : SymbolWrapper<'f>), (p7 : SymbolWrapper<'g>), (p8 : SymbolWrapper<'h>)) =
+        nonTerminal.AddProduction(p1.Symbol, p2.Symbol, p3.Symbol, p4.Symbol, p5.Symbol, p6.Symbol, p7.Symbol, p8.Symbol)
+        |> ProductionWrapper<'a,'b,'c,'d,'e,'f,'g,'h,'T>

@@ -70,6 +70,8 @@ type UnaryOperator =
     | LogicalNegate
     | Negate
     | Not
+    | Incr
+    | Decr
     | Identity
     | IntCast
     | BoolCast
@@ -78,6 +80,8 @@ type UnaryOperator =
         | LogicalNegate -> "!"
         | Negate        -> "-"
         | Not           -> "~"
+        | Incr          -> "++"
+        | Decr          -> "--"
         | Identity      -> "+"
         | IntCast       -> "(int)"
         | BoolCast      -> "(bool)"
@@ -93,11 +97,11 @@ and Literal =
         | HexLiteral h    -> "0x" + h.ToString "x8"
        <| x
 type Expression =
-    | TernaryExpression of Expression * Expression * Expression
     | ScalarAssignmentExpression of IdentifierRef * Expression
     | ScalarAssignmentOperatorExpression of IdentifierRef * BinaryOperator * Expression
     | ArrayAssignmentExpression of ArrayIdentifierRef * Expression * Expression
     | ArrayAssignmentOperatorExpression of ArrayIdentifierRef * Expression * BinaryOperator * Expression
+    | TernaryExpression of Expression * Expression * Expression
     | BinaryExpression of Expression * BinaryOperator * Expression
     | UnaryExpression of UnaryOperator * Expression
     | IdentifierExpression of IdentifierRef
@@ -122,7 +126,7 @@ type LocalDeclarations = VariableDeclaration list
 type Statement =
     | ExpressionStatement of ExpressionStatement
     | CompoundStatement of CompoundStatement
-    | ForStatement of ForStatement
+  //| ForStatement of ForStatement
     | IfStatement of IfStatement
     | WhileStatement of WhileStatement
     | ReturnStatement of Expression option
@@ -133,7 +137,7 @@ type Statement =
 and CompoundStatement = LocalDeclarations * Statement list
 and IfStatement = Expression * Statement * Statement option
 and WhileStatement = Expression * Statement
-and ForStatement = ExpressionStatement * Expression * ExpressionStatement * Statement
+//and ForStatement = ExpressionStatement * Expression * ExpressionStatement * Statement
 type FunctionDeclaration = TypeSpec * Identifier * Parameters * CompoundStatement
 type Declaration =
     | GlobalVariableDeclaration of VariableDeclaration
