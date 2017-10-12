@@ -1,11 +1,8 @@
-﻿module MCPUCompiler.Parser
+﻿module MCPUCompiler.Lexer
 
 open System.Globalization
 open Piglet.Parser
 open Util
-open System.Net.Sockets
-open System.ComponentModel.Design
-open Piglet.Lexer.Configuration
 
 
 let conf = ParserFactory.Configure<obj>()
@@ -331,6 +328,6 @@ let parse (s : string) =
         parser.Parse(s) :?> Program
     with
         | :? Piglet.Lexer.LexerException as ex ->
-            raise (lexerError ex.Message)
+            raise (LexerError ex.Message)
         | :? Piglet.Parser.ParseException as ex ->
-            raise (parserError ex.Message)
+            raise (ParserError ex.Message)

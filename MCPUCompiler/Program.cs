@@ -31,31 +31,68 @@ namespace MCPUCompiler
                 return;
 
             byte[] jar = dic.ContainsKey("jar") ? File.ReadAllBytes(dic["jar"]) : Resources.MCPUPlugin;
-            string[] instructions;
+            string[] instructions = null;
 
-            using (MemoryStream ms = new MemoryStream(jar))
-            using (ZipArchive zip = new ZipArchive(ms, ZipArchiveMode.Read, false))
-                instructions = (from entry in zip.Entries
-                                where entry.FullName.ToLower().Replace('\\', '/').StartsWith(OPCODE_PATH)
-                                select entry.Name).ToArray();
-
-            using (Compiler cmp = new Compiler(instructions))
+            try
             {
-                string code = File.ReadAllText(dic["in"]);
-                CompilerResult result = cmp.Compile(code);
-
-                if (result.Success)
+                using (MemoryStream ms = new MemoryStream(jar))
+                using (ZipArchive zip = new ZipArchive(ms, ZipArchiveMode.Read, false))
                 {
-                    "The compilation was successful. Generated instructions:".Print(Red);
+                    instructions = (from entry in zip.Entries
+                                    where entry.FullName.ToLower().Replace('\\', '/').StartsWith(OPCODE_PATH)
+                                    select entry.Name).ToArray();
 
-                    // TODO
+                    using (Stream s = zip.GetEntry("plugin.yml").Open())
+                    using (StreamReader sr = new StreamReader(s))
+                    {
+                        Match m;
+                        var yml = (from ln in sr.ReadToEnd().Split('\r', '\n')
+                                   where ln.match(@"^(?<name>[^\:\s]+)\s*\:\s*(?<value>[^\s].*)$", out m)
+                                   select new
+                                   {
+                                       Name = m.Groups["name"].ToString(),
+                                       Value = m.Groups["value"].ToString()
+                                   }).ToDictionary(x => x.Name, x => x.Value);
+
+                        $"Loaded .jar file:\n\t   name: {yml["name"]}\n\tversion: {yml["version"]}\n\t author: {yml["author"]}\n\t descr.: {yml["description"]}".Print();
+                    }
                 }
-                else
+            }
+            catch
+            {
+                "The given .jar file does not seem to contain a valid MCPU Minecraft plugin.".Print(Red);
+            }
+            
+            if (instructions != null)
+                using (Compiler cmp = new Compiler(instructions))
                 {
-                    "The compiler could not compile the input file due to the follwing reason(s):".Print(Red);
+                    string code = File.ReadAllText(dic["in"]);
+                    CompilerResult result = cmp.Compile(code);
 
-                    // TODO
+                    if (result.Success)
+                    {
+                        "The compilation was successful. Generated instructions:".Print(Green);
+
+                        // TODO
+                    }
+                    else
+                    {
+                        "The compiler could not compile the input file due to the follwing reason(s):".Print(Red);
+
+                        // TODO
+                    }
                 }
+
+            Quit();
+        }
+
+        private static void Quit()
+        {
+            if (Debugger.IsAttached)
+            {
+                "Press any key to exit ...".Print();
+
+                ReadKey(true);
             }
         }
 
@@ -92,12 +129,7 @@ namespace MCPUCompiler
                     return dic;
             }
 
-            if (Debugger.IsAttached)
-            {
-                "Press any key to exit ...".Print();
-
-                ReadKey(true);
-            }
+            Quit();
 
             return null;
         }

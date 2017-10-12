@@ -253,7 +253,9 @@ paket-files/
 .idea/
 *.sln.iml
 
+*tasks.xml.zip
 *.class
+org.eclipse.e4.workbench/
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/

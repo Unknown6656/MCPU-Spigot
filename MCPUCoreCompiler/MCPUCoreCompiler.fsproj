@@ -54,6 +54,8 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Structural.fs" />
     <Compile Include="Util.fs" />
+    <Compile Include="Errors.fs" />
+    <Compile Include="Lexer.fs" />
     <Compile Include="Parser.fs" />
     <None Include="Script.fsx" />
     <Content Include="packages.config" />

@@ -143,3 +143,12 @@ type Declaration =
     | GlobalVariableDeclaration of VariableDeclaration
     | FunctionDeclaration of FunctionDeclaration
 type Program = Declaration list
+
+type VariableType =
+    {
+        Type : TypeSpec
+        IsArray : bool
+    }
+    override x.ToString() =
+        x.Type.ToString().ToLower() + (if x.IsArray then "[]" else "")
+
