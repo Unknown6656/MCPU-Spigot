@@ -45,10 +45,23 @@ namespace MCPUCompiler
         public string Error { set; get; }
         // TODO
 
-        public static implicit operator CompilerResult(Exception ex) => new CompilerResult
+        public static implicit operator CompilerResult(Exception ex)
         {
-            Success = false,
-            Error = ex.Message,
-        };
+            StringBuilder sb = new StringBuilder();
+
+            while (ex != null)
+            {
+                sb.Insert(0, ex.StackTrace + '\n');
+                sb.Insert(0, ex.Message + '\n');
+
+                ex = ex.InnerException;
+            }
+
+            return new CompilerResult
+            {
+                Success = false,
+                Error = sb.ToString(),
+            };
+        }
     }
 }

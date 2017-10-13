@@ -103,16 +103,14 @@ let comma            = term  ","
 let percent          = term  "%"
 let forwardSlash     = term  "/"
 let singleEquals     = term  "="
-let pipe             = term  @"\|"
-let doublePipes      = term  @"\|\|"
+let pipe             = term  @"\|\|?"
 let doubleEquals     = term  "=="
 let bangEquals       = term  "!="
 let openAngleEquals  = term  "<="
 let openAngle        = term  "<"
 let closeAngleEquals = term  ">="
 let closeAngle       = term  ">"
-let ampersand        = term  "&"
-let doubleAmpersands = term  "&&"
+let ampersand        = term  "&&?"
 let period           = term  @"\."
 let doubleQuote      = term  "\""
 let asm              = termf "[^\"]+" id
@@ -138,10 +136,9 @@ assoc Left [ singleEquals ]
 assoc Left [ hat ]
 assoc Left [ pipe ]
 assoc Left [ ampersand ]
-assoc Left [ doubleEquals; doublePipes ]
 assoc Left [ openAngle; openAngleEquals; closeAngle; closeAngleEquals ]
 assoc Left [ rotateLeft; shiftLeft; rotateRight; shiftRight ]
-assoc Left [ tilde; minus; plus; exclamation; doublePlus; doubleMinus ]
+assoc Left [ tilde; minus; plus; exclamation ]
 assoc Left [ asterisk; forwardSlash; percent ]
 assoc Right [ doubleAsterisk ]
 assoc Right [ CastBool; CastInt ]
@@ -268,9 +265,7 @@ reduce3 expression identifier singleEquals expression (fun i _ e -> ScalarAssign
 reduce6 expression arridentifier openSquare expression closeSquare singleEquals expression (fun i _ n _ _ e -> ArrayAssignmentExpression(i, n, e))
 reduce3 expression identifier binaryAssignOperator expression (fun i o e -> ScalarAssignmentOperatorExpression({ Identifier = i}, o, e))
 reduce6 expression arridentifier openSquare expression closeSquare binaryAssignOperator expression (fun i _ n _ o e -> ArrayAssignmentOperatorExpression(i, n, o, e))
-reduce3 expression expression doublePipes expression (fun x _ y -> BinaryExpression(x, Or, y))
 reduce3 expression expression pipe expression (fun x _ y -> BinaryExpression(x, Or, y))
-reduce3 expression expression doubleAmpersands expression (fun x _ y -> BinaryExpression(x, And, y))
 reduce3 expression expression ampersand expression (fun x _ y -> BinaryExpression(x, And, y))
 reduce3 expression expression rotateLeft expression (fun x _ y -> BinaryExpression(x, Rol, y))
 reduce3 expression expression shiftLeft expression (fun x _ y -> BinaryExpression(x, Shl, y))
@@ -307,9 +302,9 @@ reduce1 expression hexLiteral LiteralExpression
 reduce1 expression ioLiteral LiteralExpression
 
 reduce1 unaryOperator exclamation (fun _ -> LogicalNegate)
-reduce1 unaryOperator doubleMinus (fun _ -> Decr)
 reduce1 unaryOperator minus (fun _ -> Negate)
-reduce1 unaryOperator doublePlus (fun _ -> Incr)
+//reduce1 unaryOperator doubleMinus (fun _ -> Decr)
+//reduce1 unaryOperator doublePlus (fun _ -> Incr)
 reduce1 unaryOperator plus (fun _ -> Identity)
 reduce1 unaryOperator tilde (fun _ -> Not)
 reduce1 unaryOperator CastInt (fun _ -> IntCast)
@@ -329,6 +324,6 @@ let parse (s : string) =
     try
         parser.Parse(s) :?> Program
     with
-        | :? Piglet.Lexer.LexerException as ex -> raise <| LexerError ex.Message
-        | :? Piglet.Parser.ParseException as ex -> raise <| ParserError ex.Message
+        | :? Piglet.Lexer.LexerException as ex -> raise <| LexerError ex
+        | :? Piglet.Parser.ParseException as ex -> raise <| ParserError ex
         | ex -> raise <| GeneralError ex

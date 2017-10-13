@@ -1,5 +1,9 @@
 ﻿namespace MCPUCompiler.Core
 
+open Piglet.Lexer
+open Piglet.Parser
+
+
 type CompilerException(message : string) =
     inherit System.Exception(message)
     
@@ -7,8 +11,8 @@ type CompilerException(message : string) =
 module Errors =
     let private (/>) n m = CompilerException <| sprintf "MCPU%03i: %s" n m
 
-    let LexerError m =                           1/>sprintf "Lexer error: %s" m
-    let ParserError m =                          2/>sprintf "Parser error: %s" m
+    let LexerError (e : LexerException) =        1/>sprintf "Lexing error: %s near '%s' on line %d" (e.Message) (e.LineContents) (e.LineNumber)
+    let ParserError (e : ParseException) =       2/>sprintf "Parsing error: %s. Expected [%A], got [%A] on line %d near '%s'" (e.Message) (e.ExpectedTokens) (e.FoundToken) (e.LexerState.CurrentLineNumber) (e.LexerState.LastLexeme)
     let VariableAlreadyDefined a =               3/>sprintf "A variable named '%s' is already defined in this scope" a
     let CannotConvertType (a : VariableType) (b : VariableType) =
                                                  4/>sprintf "Cannot convert type '%A' to '%A'" a b

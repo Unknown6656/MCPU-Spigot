@@ -80,7 +80,7 @@ namespace MCPUCompiler
                     else
                     {
                         "The compiler could not compile the input file due to the follwing reason(s):".Print(Red);
-
+                        
                         result.Error.Print();
                         // TODO
                     }
