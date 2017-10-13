@@ -185,26 +185,32 @@ public final class MCPUProcessor
     {
         CheckIOExists(port, p ->
         {
-            p.x = (byte)Math.max(0, Math.min(value, 15));
-            
-            // Block b = GetIOPortAdjacent(port).getBlock();
-            //
-            // if (b.getType() == Material.REDSTONE_WIRE)
-            // CraftMagicNumbers.getBlock(b).getBlockData().get(BlockStateInteger.of("power", 0, p.x));
-            Location l1 = GetIOPortAdjacent(port);
-            Location l2 = l1.clone().add(0, -1, 0);
-            
-            if (port < sidecount)
-                l1.add(0, 0, 1);
-            else if (port < 2 * sidecount)
-                l1.add(-1, 0, 0);
-            else if (port < 3 * sidecount)
-                l1.add(0, 0, -1);
+            if (p.y)
+            {
+                p.x = (byte)Math.max(0, Math.min(value, 15));
+                
+                // Block b = GetIOPortAdjacent(port).getBlock();
+                //
+                // if (b.getType() == Material.REDSTONE_WIRE)
+                // CraftMagicNumbers.getBlock(b).getBlockData().get(BlockStateInteger.of("power", 0, p.x));
+                Location l1 = GetIOPortAdjacent(port);
+                Location l2 = l1.clone().add(0, -1, 0);
+                
+                if (port < sidecount)
+                    l1.add(0, 0, 1);
+                else if (port < 2 * sidecount)
+                    l1.add(-1, 0, 0);
+                else if (port < 3 * sidecount)
+                    l1.add(0, 0, -1);
+                else
+                    l1.add(1, 0, 0);
+                
+                l1.getBlock().setType(value != 0 ? Material.REDSTONE_BLOCK : Material.IRON_BLOCK);
+                l2.getBlock().setType(value != 0 ? Material.REDSTONE_BLOCK : Material.IRON_BLOCK);
+                
+            }
             else
-                l1.add(1, 0, 0);
-            
-            l1.getBlock().setType(value != 0 ? Material.REDSTONE_BLOCK : Material.IRON_BLOCK);
-            l2.getBlock().setType(value != 0 ? Material.REDSTONE_BLOCK : Material.IRON_BLOCK);
+                Failwith("The port no. " + port + " is not set for output.");
             
             return null;
         });
@@ -214,14 +220,23 @@ public final class MCPUProcessor
     {
         return (int)CheckIOExists(port, p ->
         {
-            Block b = GetIOPortAdjacent(port).getBlock();
-            BlockState s = b.getState();
-            
-            s.update();
-            
-            p.x = (byte)Math.max(0, Math.min(b.getBlockPower(), 15));
-            
-            return p.x;
+            if (!p.y)
+            {
+                Block b = GetIOPortAdjacent(port).getBlock();
+                BlockState s = b.getState();
+                
+                s.update();
+                
+                p.x = (byte)Math.max(0, Math.min(b.getBlockPower(), 15));
+                
+                return p.x;   
+            }
+            else
+            {
+                Failwith("The port no. " + port + " is not set for input.");
+                
+                return 0;
+            }
         });
     }
     

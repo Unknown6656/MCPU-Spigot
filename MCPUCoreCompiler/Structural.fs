@@ -1,4 +1,4 @@
-﻿namespace MCPUCompiler
+﻿namespace MCPUCompiler.Core
 
 
 type Identifier = string
@@ -89,12 +89,10 @@ type UnaryOperator =
 and Literal =
     | BoolLiteral of bool
     | IntLiteral of int
-    | HexLiteral of int
     override x.ToString() =
         function
         | BoolLiteral b   -> b.ToString()
         | IntLiteral i    -> i.ToString()
-        | HexLiteral h    -> "0x" + h.ToString "x8"
        <| x
 type Expression =
     | ScalarAssignmentExpression of IdentifierRef * Expression

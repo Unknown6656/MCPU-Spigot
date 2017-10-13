@@ -257,6 +257,7 @@ paket-files/
 *.class
 org.eclipse.e4.workbench/
 .indexes/
+.recommenders/
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/

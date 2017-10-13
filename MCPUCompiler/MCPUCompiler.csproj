@@ -35,6 +35,7 @@
     <StartupObject>MCPUCompiler.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FSharp.Core, Version=4.4.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.IO.Compression" />
@@ -72,6 +73,10 @@
     <ProjectReference Include="..\MCPUCoreCompiler\MCPUCoreCompiler.fsproj">
       <Project>{5ce6ff22-7c79-4dc2-b569-d56a99d83f74}</Project>
       <Name>MCPUCoreCompiler</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Piglet\Piglet\Piglet.csproj">
+      <Project>{1e23f251-94e1-4504-81e8-2618f5c9fea3}</Project>
+      <Name>Piglet</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -1,4 +1,4 @@
-﻿module MCPUCompiler.Parser
+﻿module MCPUCompiler.Core.Parser
 
 open System.Collections.Generic
 
@@ -16,12 +16,17 @@ let (|Scalar|_|) (t : VariableType) = if t.IsArray then Some t.Type else None
 let (|Sbool|_|) (t : VariableType) = if t = !/Bool then Some () else None
 let (|Sint|_|) (t : VariableType) = if t = !/Int then Some () else None
 let DeclarationType : VariableDeclaration -> VariableType = fst >> (!/)
-let BuildInFunctions : (string * FunctionTableEntry) list = [
-
-        //self.Add("iread",  { ReturnType = Int; ParameterTypes = []; })
-        //self.Add("iprint", { ReturnType = Void; ParameterTypes = [ { Type = Int; IsArray = false } ]; })
-        //self.Add("fread",  { ReturnType = Float; ParameterTypes = []; })
-        //self.Add("fprint", { ReturnType = Void; ParameterTypes = [ { Type = Float; IsArray = false } ]; })
+let BuildInFunctions : (string * FunctionTableEntry) list =
+    let (/-->) p r = { ReturnType = r; ParameterTypes = [ for x in p -> { Type = x; IsArray = false } ] }
+    [
+        "printi", [Int] /--> Void
+        "abs", [Int] /--> Int
+        "pow", [Int; Int] /--> Int
+        "log", [Int] /--> Int
+        "loge", [Int] /--> Int
+        "log2", [Int] /--> Int
+        "log10", [Int] /--> Int
+        "io", [Int; Bool] /--> Void
     ]
 
 
@@ -205,19 +210,24 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                     checkScalarAssignment (symbolTable.GetIdentifierTypeSpec i) e
                 | ScalarAssignmentOperatorExpression(i, op, e) ->
                     checkScalarAssignment (symbolTable.GetIdentifierTypeSpec i) (BinaryExpression(IdentifierExpression i, op, e))
-                | ArrayAssignmentExpression(i, e1, e2) ->
+                | ArrayAssignmentExpression(_, e1, e2) ->
                     checkArrayIndexType e1
-
                     let t2 = scanExpression e2
-
                     if t2.IsArray then
                         raise <| CannotConvertType t2 !/Int
                     elif t2.Type <> Int then
                         raise <| CannotConvertType t2 !/Int
-
-                    !/Int
+                    else
+                        !/Int
                 | ArrayAssignmentOperatorExpression(i, e1, op, e2) ->
-                    ()
+                    checkArrayIndexType e1
+                    let t2 = scanExpression e2
+                    if t2.IsArray then
+                        raise <| CannotConvertType t2 !/Int
+                    elif t2.Type <> Int then
+                        raise <| CannotConvertType t2 !/Int
+                    else
+                        checkScalarAssignment !/Int (BinaryExpression(ArrayIdentifierExpression(i, e2), op, e2))
                 | TernaryExpression(e1, e2, e3) ->
                     let t1 = scanExpression e1
                     let t2 = scanExpression e2
@@ -277,7 +287,6 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                 | ArraySizeExpression _ -> !/Int
                 | LiteralExpression l -> match l with
                                          | BoolLiteral _ -> !/Bool
-                                         | HexLiteral _ -> !/Int
                                          | IntLiteral _ -> !/Int
             self.Add(expr, texpr)
             texpr

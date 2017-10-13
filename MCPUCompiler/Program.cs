@@ -45,7 +45,7 @@ namespace MCPUCompiler
                     using (Stream s = zip.GetEntry("plugin.yml").Open())
                     using (StreamReader sr = new StreamReader(s))
                     {
-                        Match m;
+                        Match m = null;
                         var yml = (from ln in sr.ReadToEnd().Split('\r', '\n')
                                    where ln.match(@"^(?<name>[^\:\s]+)\s*\:\s*(?<value>[^\s].*)$", out m)
                                    select new
@@ -73,12 +73,15 @@ namespace MCPUCompiler
                     {
                         "The compilation was successful. Generated instructions:".Print(Green);
 
+                        foreach (string line in result.Lines)
+                            line.Print();
                         // TODO
                     }
                     else
                     {
                         "The compiler could not compile the input file due to the follwing reason(s):".Print(Red);
 
+                        result.Error.Print();
                         // TODO
                     }
                 }

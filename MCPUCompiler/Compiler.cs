@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace MCPUCompiler
 {
+    using MCPUCompiler.Core;
+
+
     public sealed class Compiler
         : IDisposable
     {
@@ -21,14 +24,31 @@ namespace MCPUCompiler
 
         public CompilerResult Compile(string code)
         {
+            try
+            {
+                var res = Lexer.parser;
+                var tree = Lexer.parse(code);
 
+                throw null;
+            }
+            catch (Exception ex)
+            {
+                return ex;
+            }
         }
     }
 
     public struct CompilerResult
     {
         public bool Success { set; get; }
-
+        public string[] Lines { set; get; }
+        public string Error { set; get; }
         // TODO
+
+        public static implicit operator CompilerResult(Exception ex) => new CompilerResult
+        {
+            Success = false,
+            Error = ex.Message,
+        };
     }
 }

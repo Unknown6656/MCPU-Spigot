@@ -11,6 +11,6 @@ public final class Log2 extends UnaryOpcode
     public Log2()
     {   
         // fucking java strikes again ... not having a log_2-function defined and error correction with a definition of epsilon
-        super(x -> (int)(Math.log(x) / Math.log(2) + ε));
+        super(x -> (int)(Math.log(x) / (Math.log(2) + ε)));
     }
 }

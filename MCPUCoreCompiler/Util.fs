@@ -1,7 +1,8 @@
-﻿module MCPUCompiler.Util
+﻿module MCPUCompiler.Core.Util
 
 open Piglet.Parser
 open Piglet.Parser.Configuration
+
 
 type ProductionWrapperBase (production : IProduction<obj>) =
     member x.Production = production

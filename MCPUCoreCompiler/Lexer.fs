@@ -1,4 +1,4 @@
-﻿module MCPUCompiler.Lexer
+﻿module MCPUCompiler.Core.Lexer
 
 open System.Globalization
 open Piglet.Parser
@@ -83,6 +83,7 @@ let colon            = term  ":"
 let asterisk         = term  @"\*"
 let doubleAsterisk   = term  @"\*\*"
 let hat              = term  @"\^"
+let ioLiteral        = termf @"(in|out)"                                (fun s -> BoolLiteral(s.ToLower() <> "in"))
 let intLiteral       = termf @"\d+"                                     (fun s -> IntLiteral(int32 s))
 let hexLiteral       = termf @"(0(x|X)[0-9a-fA-F]+|[0-9a-fA-F]+(h|H))"  (fun s -> IntLiteral(System.Int32.Parse(s, NumberStyles.HexNumber)))
 let trueLiteral      = termf "true"                                     (fun _ -> BoolLiteral true)
@@ -303,6 +304,7 @@ reduce1 expression trueLiteral LiteralExpression
 reduce1 expression falseLiteral LiteralExpression
 reduce1 expression intLiteral LiteralExpression
 reduce1 expression hexLiteral LiteralExpression
+reduce1 expression ioLiteral LiteralExpression
 
 reduce1 unaryOperator exclamation (fun _ -> LogicalNegate)
 reduce1 unaryOperator doubleMinus (fun _ -> Decr)
@@ -327,7 +329,6 @@ let parse (s : string) =
     try
         parser.Parse(s) :?> Program
     with
-        | :? Piglet.Lexer.LexerException as ex ->
-            raise (LexerError ex.Message)
-        | :? Piglet.Parser.ParseException as ex ->
-            raise (ParserError ex.Message)
+        | :? Piglet.Lexer.LexerException as ex -> raise <| LexerError ex.Message
+        | :? Piglet.Parser.ParseException as ex -> raise <| ParserError ex.Message
+        | ex -> raise <| GeneralError ex
