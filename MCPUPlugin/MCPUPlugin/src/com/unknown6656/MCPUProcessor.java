@@ -207,8 +207,7 @@ public final class MCPUProcessor
                     l1.add(1, 0, 0);
                 
                 l1.getBlock().setType(value != 0 ? Material.REDSTONE_BLOCK : Material.IRON_BLOCK);
-                l2.getBlock().setType(value != 0 ? Material.REDSTONE_BLOCK : Material.IRON_BLOCK);
-                
+                // l2.getBlock().setType(value != 0 ? Material.REDSTONE_BLOCK : Material.IRON_BLOCK);
             }
             else
                 Failwith("The port no. " + port + " is not set for output.");

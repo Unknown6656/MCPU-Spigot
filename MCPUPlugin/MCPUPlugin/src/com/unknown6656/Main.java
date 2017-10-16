@@ -411,8 +411,8 @@ public final class Main extends JavaPlugin implements Listener
             {
                 SetBlock(w, x + i, y, z - sdhl - 1, Material.IRON_BLOCK);
                 SetBlock(w, x + i, y, z + sdhl + 1, Material.IRON_BLOCK);
-                SetBlock(w, x + i, y - 1, z - sdhl - 2, Material.IRON_BLOCK);
-                SetBlock(w, x + i, y - 1, z + sdhl + 2, Material.IRON_BLOCK);
+                // SetBlock(w, x + i, y - 1, z - sdhl - 2, Material.IRON_BLOCK);
+                // SetBlock(w, x + i, y - 1, z + sdhl + 2, Material.IRON_BLOCK);
                 SetBlock(w, x + i, y, z - sdhl - 2, Material.REDSTONE_WIRE);
                 SetBlock(w, x + i, y, z + sdhl + 2, Material.REDSTONE_WIRE);
             }
@@ -421,8 +421,8 @@ public final class Main extends JavaPlugin implements Listener
             {
                 SetBlock(w, x - sdhl - 1, y, z + j, Material.IRON_BLOCK);
                 SetBlock(w, x + sdhl + 1, y, z + j, Material.IRON_BLOCK);
-                SetBlock(w, x - sdhl - 2, y - 1, z + j, Material.IRON_BLOCK);
-                SetBlock(w, x + sdhl + 2, y - 1, z + j, Material.IRON_BLOCK);
+                // SetBlock(w, x - sdhl - 2, y - 1, z + j, Material.IRON_BLOCK);
+                // SetBlock(w, x + sdhl + 2, y - 1, z + j, Material.IRON_BLOCK);
                 SetBlock(w, x - sdhl - 2, y, z + j, Material.REDSTONE_WIRE);
                 SetBlock(w, x + sdhl + 2, y, z + j, Material.REDSTONE_WIRE);
             }
@@ -437,7 +437,7 @@ public final class Main extends JavaPlugin implements Listener
                 lever.setPowered(true);
                 
                 b.getState().setData(lever);
-                // b.setData((byte)0b1111);
+                b.setData((byte)6);
                 
                 b.getState().update();
             });
