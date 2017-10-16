@@ -253,10 +253,8 @@ paket-files/
 .idea/
 *.sln.iml
 
-*tasks.xml.zip
 *.class
-org.eclipse.e4.workbench/
-.indexes/
+.metadata/
 .recommenders/
 
 # Mobile Tools for Java (J2ME)

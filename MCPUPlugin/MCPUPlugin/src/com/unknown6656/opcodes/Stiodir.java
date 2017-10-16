@@ -20,6 +20,6 @@ public final class Stiodir extends MCPUOpcode
         int direction = frame.Pop();
         int port = frame.Pop();
         
-        proc.SetIODirection(port, direction != 0);
+        proc.IODirection(port, direction != 0);
     }
 }

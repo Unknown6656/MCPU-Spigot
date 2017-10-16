@@ -23,6 +23,7 @@ public final class MCPUProcessor
     private MCPUInstruction[] instructions;
     public final int sideoffset;
     private final int sidecount;
+    public int globalscount;
     private boolean canrun;
     private int ticks;
     
@@ -171,17 +172,17 @@ public final class MCPUProcessor
         return ticks;
     }
     
-    public void SetIODirection(int port, boolean direction)
+    public void IODirection(int port, boolean direction)
     {
         CheckIOExists(port, p -> p.y = direction);
     }
     
-    public boolean SetIODirection(int port)
+    public boolean IODirection(int port)
     {
         return CheckIOExists(port, p -> p.y);
     }
     
-    public void SetIO(int port, int value)
+    public void IO(int port, int value)
     {
         CheckIOExists(port, p ->
         {
@@ -216,7 +217,7 @@ public final class MCPUProcessor
         });
     }
     
-    public int GetIO(int port)
+    public int IO(int port)
     {
         return (int)CheckIOExists(port, p ->
         {
@@ -238,6 +239,26 @@ public final class MCPUProcessor
                 return 0;
             }
         });
+    }
+    
+    public int Globals(int addr)
+    {
+        if ((addr >= globalscount) || (addr < 0))
+        {
+            Failwith("Invalid global variable access: The address was outside the memory range. The global variable address must be a value between 0 and " + (globalscount - 1) + ".");
+            
+            return 0;
+        }
+        else
+            return memory[memory.length - addr];
+    }
+    
+    public void Globals(int addr, int value)
+    {
+        if ((addr >= globalscount) || (addr < 0))
+            Failwith("Invalid global variable access: The address was outside the memory range. The global variable address must be a value between 0 and " + (globalscount - 1) + ".");
+        else
+            memory[memory.length - addr] = value;
     }
     
     private Location GetIOPortAdjacent(int port)
@@ -322,8 +343,8 @@ public final class MCPUProcessor
     {
         boolean res;
         
-        if (res = ((addr < 0) || (addr > memory.length)))
-            Failwith("Invalid memory access: The address was outside the memory range. The memory address must be a value between 0 and " + memory.length + ".");
+        if (res = ((addr < 0) || (addr > memory.length - globalscount)))
+            Failwith("Invalid memory access: The address was outside the memory range. The memory address must be a value between 0 and " + (memory.length - globalscount - 1) + ".");
         else
             Raise(OnMemoryAccess, addr);
         
@@ -391,7 +412,6 @@ public final class MCPUProcessor
         return b.getType() == Material.LEVER ? b.isBlockPowered() || (b.getBlockPower() != 0) : true;
     }
 
-   
     public int MemorySize()
     {
         return memory == null ? -1 : memory.length;

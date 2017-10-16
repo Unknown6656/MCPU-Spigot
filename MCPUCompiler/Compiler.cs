@@ -28,6 +28,7 @@ namespace MCPUCompiler
             {
                 var res = Lexer.parser;
                 var tree = Lexer.parse(code);
+                var an = Parser.Analyze(tree);
 
                 throw null;
             }

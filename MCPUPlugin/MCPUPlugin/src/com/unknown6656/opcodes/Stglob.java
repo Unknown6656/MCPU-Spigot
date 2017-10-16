@@ -5,8 +5,14 @@ import com.unknown6656.MCPUOpcode;
 import com.unknown6656.MCPUProcessor;
 
 
-public final class Ldio extends MCPUOpcode
+public final class Stglob extends MCPUOpcode
 {
+    @Override
+    public int MinimumArgumentCount()
+    {
+        return 1;
+    }
+    
     @Override
     public int MinimumStackSize()
     {
@@ -16,9 +22,8 @@ public final class Ldio extends MCPUOpcode
     @Override
     public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
-        int port = frame.Pop();
-        int value = proc.IO(port);
+        int value = frame.Pop();
         
-        frame.Push(value);
+        proc.Globals(arguments[0], value);
     }
 }

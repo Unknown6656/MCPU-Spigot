@@ -1,4 +1,4 @@
-﻿namespace MCPUCompiler.Core
+﻿module MCPUCompiler.Core.SyntaxTree
 
 
 type Identifier = string

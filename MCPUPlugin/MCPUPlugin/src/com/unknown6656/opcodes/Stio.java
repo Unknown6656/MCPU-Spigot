@@ -20,6 +20,6 @@ public final class Stio extends MCPUOpcode
         int value = frame.Pop();
         int port = frame.Pop();
         
-        proc.SetIO(port, value);
+        proc.IO(port, value);
     }
 }

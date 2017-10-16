@@ -1,6 +1,7 @@
 ﻿module MCPUCompiler.Core.Parser
 
 open System.Collections.Generic
+open SyntaxTree
 
 
 type FunctionTableEntry =
@@ -21,12 +22,14 @@ let BuildInFunctions : (string * FunctionTableEntry) list =
     [
         "printi", [Int] /--> Void
         "abs", [Int] /--> Int
+        "sign", [Int] /--> Int
         "pow", [Int; Int] /--> Int
         "log", [Int] /--> Int
         "loge", [Int] /--> Int
         "log2", [Int] /--> Int
         "log10", [Int] /--> Int
         "io", [Int; Bool] /--> Void
+        "exp", [Int] /--> Int
     ]
 
 
@@ -293,3 +296,21 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
         scanCompoundStatement compoundStatement
     do
         List.iter scanDeclaration program
+        
+type SemanticAnalysisResult =
+    {
+        SymbolTable : SymbolTable;
+        ExpressionTypes : ExpressionTypeDictionary;
+    }
+
+let Analyze program =
+    let symbolTable = SymbolTable program
+    let functionTable = FunctionTable program
+    if not (functionTable.ContainsKey "main") then
+        raise <| MissingEntryPoint()
+    else
+        let expressionTypes = ExpressionTypeDictionary(program, functionTable, symbolTable)
+        {
+            SymbolTable = symbolTable;
+            ExpressionTypes = expressionTypes;
+        }

@@ -2,6 +2,7 @@
 
 open System.Globalization
 open Piglet.Parser
+open SyntaxTree
 open Util
 
 
@@ -54,9 +55,9 @@ let AssignMultiply   = term  @"\*="
 let AssignPower      = term  @"\*\*="
 let AssignDivide     = term  "/="
 let AssignModulo     = term  "%="
-let AssignOr         = term  @"\|="
+let AssignOr         = term  @"\|\|?="
 let AssignXor        = term  @"\^="
-let AssignAnd        = term  "&="
+let AssignAnd        = term  "&&?="
 let rotateRight      = term  ">>>"
 let shiftRight       = term  ">>"
 let rotateLeft       = term  "<<<"

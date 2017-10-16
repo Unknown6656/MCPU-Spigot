@@ -2,6 +2,7 @@
 
 open Piglet.Lexer
 open Piglet.Parser
+open SyntaxTree
 
 
 type CompilerException(message : string) =
@@ -30,3 +31,4 @@ module Errors =
     let FunctionAlreadyDefined a =               14/>sprintf "A function named '%s' is already defined" a
     let MissingEntryPoint() =                    15/>"Program does not contain a 'main' method suitable for an entry point"
     let GeneralError (a : exn) =                 16/>sprintf "A compiler error occured: %s\n%s" (a.Message) (a.StackTrace)
+    let GeneratorError x =                       17/>sprintf "The assembly instruction could not be generated for the following object: %A" x

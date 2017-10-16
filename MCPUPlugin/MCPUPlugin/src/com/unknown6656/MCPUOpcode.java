@@ -1,4 +1,6 @@
+
 package com.unknown6656;
+
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -35,11 +37,11 @@ public abstract class MCPUOpcode
             // We have to do this shit manually because java does not have reflection.
             // and NO, your fucking package 'java.lang.shit.reflection' IS NOT FUCKING REFLECTION !!! THATS BINARY SHITTING.
             // I'm hardcoding a list here for now ...... fucking java
-            // Biggest piece of shit I ever had to write .......
-            final String instr = "Abk Add And Br Brtrue Brfalse Call Div Decr Dup Eq Exp Geq Halt Incr " +
-                                 "Ldarg Ldc Ldio Ldloc Ldmem Leq Log Log2 Log10 Mod Mov Mul Neg Neq Not Nop Or " +
-                                 "Pow Regloc Ret Rol Ror Shl Shr Sign Starg Stio Stiodir Stloc Stmem " +
-                                 "Sub Swap Syscall Xor";
+            // Biggest piece of shit I ever had to write ....... (well, I let an automated tool write)
+            final String instr = "Abk Abs Add And Br Brfalse Brtrue Call Decr Div Dup Eq Exp Geq Gt Halt Incr Ldarg " +
+                                 "Ldc Ldio Ldglob Ldloc Ldmem Leq Log Log10 Log2 Loge Lt Mod Mov Mul Neg Neq Nop Not " +
+                                 "Or Pow Pop Regloc Regglob Ret Rol Ror Shl Shr Sign Starg Stio Stiodir Stloc Stmem " +
+                                 "Stglob Sub Swap Syscall Xor ";
             // Dear Microsoft,
             // Please buy Oracle company (or maybe don't, because your stock market value will crash)
             // and make the usage and development of/with Java illegal. (or at least ship a virus with the next jre-release)
