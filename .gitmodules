@@ -1,9 +1,6 @@
 [submodule "Piglet"]
 	path = Piglet
 	url = https://github.com/Unknown6656/Piglet
-[submodule "Tickets"]
-	path = Tickets
-	url = https://github.com/Zedly/Tickets
 [submodule "MCPU-Core"]
 	path = MCPU-Core
 	url = https://github.com/Unknown6656/MCPU-Core
