@@ -21,18 +21,18 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_12_R1.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.world.WorldInitEvent;
+import org.bukkit.event.world.WorldLoadEvent;
+import org.bukkit.event.world.WorldSaveEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.material.Lever;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import net.minecraft.server.v1_12_R1.ItemStack;
-import net.minecraft.server.v1_12_R1.NBTTagCompound;
-import net.minecraft.server.v1_12_R1.NBTTagList;
 
 
 // Lamdas: finally java can do SOMETHING that .net could do since at least
@@ -113,6 +113,21 @@ public final class Main extends JavaPlugin implements Listener
                 if (event.getPlayer() != null)
                     event.getPlayer().sendMessage(ChatColor.RED + "You cannot destroy a block from a registered CPU core.");
             }
+    }
+    
+    public void onWorldSaveEvent(WorldSaveEvent event)
+    {
+        
+    }
+    
+    public void onWorldLoadEvent(WorldLoadEvent event)
+    {
+        
+    }
+    
+    public void onWorldInitEvent(WorldInitEvent event)
+    {
+        
     }
     
     @Override
@@ -228,7 +243,7 @@ public final class Main extends JavaPlugin implements Listener
                         if (sender instanceof Player)
                         {
                             Player player = (Player)sender;
-                            org.bukkit.inventory.ItemStack stack = player.getInventory().getItemInMainHand();
+                            ItemStack stack = player.getInventory().getItemInMainHand();
                             String[] book = GetBook(stack);
                             
                             if (book == null)
@@ -311,25 +326,16 @@ public final class Main extends JavaPlugin implements Listener
         }
     }
     
-    private static String[] GetBook(org.bukkit.inventory.ItemStack stack)
+    private static String[] GetBook(ItemStack stack)
     {
         if (stack != null)
             if (stack.getAmount() > 0)
-                if ((stack.getType() == Material.BOOK_AND_QUILL) || (stack.getType() == Material.WRITTEN_BOOK))
+                if (((stack.getType() == Material.BOOK_AND_QUILL) || (stack.getType() == Material.WRITTEN_BOOK)) && stack.hasItemMeta())
                 {
-                    ItemStack st = CraftItemStack.asNMSCopy(stack);
+                    BookMeta bm = (BookMeta)stack.getItemMeta();
+                    String[] lines = new String[0];
                     
-                    if (st.hasTag())
-                    {
-                        NBTTagCompound tag = st.getTag();
-                        NBTTagList pages = (NBTTagList)tag.get("pages");
-                        String[] lines = new String[pages.size()];
-                        
-                        for (int i = 0; i < lines.length; ++i)
-                            lines[i] = pages.getString(i);
-                        
-                        return lines;
-                    }
+                    return bm.getPages().toArray(lines);
                 }
             
         return null;

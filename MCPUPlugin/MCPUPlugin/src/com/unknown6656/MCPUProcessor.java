@@ -32,7 +32,6 @@ public final class MCPUProcessor
     public final Player Creator;
     public final World World;
     
-    // C#'s event alternatives -__-
     public MCPUProcessorEvent<MCPUInstruction> OnInstructionExecuted;
     public MCPUProcessorEvent<MCPUInstruction> OnInstructionLoaded;
     public MCPUProcessorEvent<Integer> OnMemoryAccess;
