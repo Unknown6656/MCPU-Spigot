@@ -32,8 +32,8 @@ type ASMInstruction =
     | Ldglob of ASMVariable
     | Ldarg of int16
     | Ldloc of int16
-    | Ldmem of int
-    | Ldio of int
+    | Ldmem
+    | Ldio
     | Ldc of int
     | Lt
     | Leq
@@ -58,9 +58,9 @@ type ASMInstruction =
     | Starg of int16
     | Stloc of int16
     | Stglob of ASMVariable
-    | Stmem of int * int
-    | Stio of int
-    | Stiodir of int * int
+    | Stmem
+    | Stio
+    | Stiodir
     | Sub
     | Swap
     | Syscall of int
@@ -105,36 +105,38 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
         let res = lbindex
         lbindex <- lbindex + 1
         res
-    let rec procbinexpr = function
+    let rec procbinexpr = (function
                           | (l, SyntaxTree.Or, r) ->
                                 let leftfalselabel = mklabel()
                                 let endlabel = mklabel()
-                                List.concat [
-                                                procexpr l
-                                                [Brfalse leftfalselabel]
-                                                [Ldc 1]
-                                                [Br endlabel]
-                                                [Label leftfalselabel]
-                                                procexpr r
-                                                [Label endlabel]
-                                            ]
+                                [
+                                    procexpr l
+                                    [Brfalse leftfalselabel]
+                                    [Ldc 1]
+                                    [Br endlabel]
+                                    [Label leftfalselabel]
+                                    procexpr r
+                                    [Label endlabel]
+                                ]
                             | (l, SyntaxTree.And, r) ->
                                 let lefttruelabel = mklabel()
                                 let endlabel = mklabel()
-                                List.concat [
-                                                procexpr l
-                                                [Brtrue lefttruelabel]
-                                                [Ldc 0]
-                                                [Br endlabel]
-                                                [Label lefttruelabel]
-                                                procexpr r
-                                                [Label endlabel]
-                                            ]
-                            | (l, op, r) -> List.concat [
-                                                            procexpr l
-                                                            procexpr r
-                                                            [procbinop op]
-                                                        ]
+                                [
+                                    procexpr l
+                                    [Brtrue lefttruelabel]
+                                    [Ldc 0]
+                                    [Br endlabel]
+                                    [Label lefttruelabel]
+                                    procexpr r
+                                    [Label endlabel]
+                                ]
+                            | (l, op, r) ->
+                                [
+                                    procexpr l
+                                    procexpr r
+                                    [procbinop op]
+                                ]
+                            ) >> List.concat
     and procbinop x = match x with
                       | SyntaxTree.Add -> Add
                       | Equal -> Eq
@@ -154,8 +156,88 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
                       | SyntaxTree.Ror -> Ror
                       | SyntaxTree.Rol -> Rol
                       | _ -> raise <| GeneratorError x
+    and procunop x = match x with
+                     | LogicalNegate ->
+                        [
+                            Ldc 0
+                            Eq
+                        ]
+                     | Negate -> [Neg]
+                     | SyntaxTree.Not -> [Not]
+                     | Incr ->
+                        [
+                            Ldc 1
+                            Add
+                        ]
+                     | Decr ->
+                        [
+                            Ldc 1
+                            Sub
+                        ]
+                     | Identity
+                     | IntCast -> []
+                     | BoolCast -> 
+                        [
+                            Ldc 0
+                            Neq
+                        ]
+                     | _ -> raise <| GeneratorError x
     and procidentifierload i =
         match lookupScope i with
-        | GlobalScope v -> [Ldglob v]
-        | ArgumentScope i -> [Ldarg i]
-        | LocalScope i -> [Ldloc i]
+        | GlobalScope v -> Ldglob v
+        | ArgumentScope i -> Ldarg i
+        | LocalScope i -> Ldloc i
+    and procidentifierstore i =
+        match lookupScope i with
+        | GlobalScope v -> Stglob v
+        | ArgumentScope i -> Starg i
+        | LocalScope i -> Stloc i
+    and procexpr expr =
+        match expr with
+        | ScalarAssignmentExpression(i, e) ->
+            [
+                procexpr e
+                [Dup]
+                [procidentifierstore i]
+            ]
+        | ScalarAssignmentOperatorExpression(i, o, e) ->
+            [
+                [procidentifierload i]
+                procexpr e
+                [procbinop o]
+                [Dup]
+                [procidentifierstore i]
+            ]
+        | TernaryExpression(c, x, y) ->
+            let endlabel = mklabel()
+            let falselabel = mklabel()
+            [
+                procexpr c
+                [Brfalse falselabel]
+                procexpr x
+                [Br endlabel]
+                [Label falselabel]
+                procexpr y
+                [Label endlabel]
+            ]
+        | BinaryExpression(x, o, y) -> [procbinexpr(x, o, y)]
+        | UnaryExpression(o, x) ->
+            [
+                procexpr x
+                procunop o
+            ]
+        | IdentifierExpression i -> [[procidentifierload i]]
+        | ArrayIdentifierExpression(i, n) ->
+            [
+                procexpr n
+                [( if i = IO then Ldio else Ldmem )]
+            ]
+        | ArrayAssignmentExpression (i, n, e) ->
+            [
+                procexpr e
+                [Dup]
+                procexpr n
+                [Swap]
+                [( if i = IO then Stio else Stmem )]
+            ]
+        |> List.concat
