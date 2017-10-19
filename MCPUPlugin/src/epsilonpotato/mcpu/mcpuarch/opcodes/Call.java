@@ -7,10 +7,13 @@ import epsilonpotato.mcpu.mcpuarch.MCPUProcessor;
 
 /**
  * Requires 2 args:
+ * 
  * <pre>
  * call x y
  *      ^ ^-- argument count
  *      `---- function/label 
+ * first callee argument: bottom of stack
+ * last callee argument: top of stack
  * </pre>
  */
 public final class Call extends MCPUOpcode
@@ -24,12 +27,15 @@ public final class Call extends MCPUOpcode
     @Override
     public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
-        MCPUCallframe calee = new MCPUCallframe();
+        MCPUCallframe callee = new MCPUCallframe();
+        int count = arguments[1];
         
-        calee.Arguments = new int[arguments[1]];
+        callee.Arguments = new int[count];
         
-        proc.PushCall(calee);
+        for (int i = 0; i < count; ++i)
+            callee.Arguments[count - 1 - i] = frame.Pop();
         
-        proc.InstructionPointer = arguments[0] -1;
+        proc.PushCall(callee);
+        proc.InstructionPointer = arguments[0] - 1;
     }
 }

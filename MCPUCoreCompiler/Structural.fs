@@ -115,11 +115,16 @@ type Expression =
         | ArrayAssignmentExpression(x, n, y) -> sprintf "%A[%A] = (%A)" x n y
         | ArrayAssignmentOperatorExpression(x, n, o, y) -> sprintf "%A[%A] %A= (%A)" x n o y
         | BinaryExpression(x, o, y) -> sprintf "(%A) %A (%A)" x o y
+        | ArraySizeExpression x -> sprintf "sizeof(%A)" x
         // TODO
 and Arguments = Expression list
 type ExpressionStatement =
     | Expression of Expression
     | Nop
+    override x.ToString() =
+        match x with
+        | Expression e -> e.ToString() + ";"
+        | Nop -> ";"
 type LocalDeclarations = VariableDeclaration list
 type Statement =
     | ExpressionStatement of ExpressionStatement
@@ -132,6 +137,10 @@ type Statement =
     | HaltStatement
     | AbkStatement
     | InlineAssemblyStatement of string
+    override x.ToString() =
+        match x with
+        | ExpressionStatement es -> es.ToString()
+        // | CompoundStatement c -> sprintf "{\n%A%A}" (for d in fst c -> d.ToString() + "\n") (for d in snd c -> d.ToString() + "\n")
 and CompoundStatement = LocalDeclarations * Statement list
 and IfStatement = Expression * Statement * Statement option
 and WhileStatement = Expression * Statement

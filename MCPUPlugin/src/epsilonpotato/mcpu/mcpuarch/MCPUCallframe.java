@@ -43,7 +43,6 @@ public final class MCPUCallframe
         Stack.push(val);
     }
 
-    
     public int StackSize()
     {
         return Stack.size();

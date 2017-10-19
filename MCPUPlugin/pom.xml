@@ -17,6 +17,7 @@
 			<groupId>org.bukkit</groupId>
 			<artifactId>bukkit</artifactId>
 			<version>1.12.2-R0.1-SNAPSHOT</version>
+			<scope>compile</scope>
 		</dependency>
 		<!-- MCPU CORE -->
 		<dependency>
@@ -34,10 +35,11 @@
 		</dependency>
 	</dependencies>
 	<build>
+		<!-- <finalName>MCPUPlugin</finalName> -->
 		<sourceDirectory>src</sourceDirectory>
 		<resources>
 			<resource>
-				<directory></directory>
+				<directory>/</directory>
 				<includes>
 					<include>plugin.yml</include>
 				</includes>

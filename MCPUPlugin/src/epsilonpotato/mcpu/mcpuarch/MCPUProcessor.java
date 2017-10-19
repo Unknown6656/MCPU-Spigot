@@ -327,9 +327,14 @@ public final class MCPUProcessor extends EmulatedProcessor
         stop();
     }
     
-    public void PopCall()
+    public MCPUCallframe PopCall()
     {
-        callstack.pop();
+        return callstack.pop();
+    }
+    
+    public MCPUCallframe PeekCall()
+    {
+        return callstack.peek();
     }
     
     public void PushCall(MCPUCallframe frame)

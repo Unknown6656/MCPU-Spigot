@@ -39,9 +39,9 @@ public abstract class MCPUOpcode
             // I'm hardcoding a list here for now ...... fucking java
             // Biggest piece of shit I ever had to write ....... (well, I let an automated tool write)
             final String instr = "Abk Abs Add And Br Brfalse Brtrue Call Clr Decr Div Dup Eq Exp Geq Gt Halt Incr Ldarg " +
-                                 "Ldc Ldio Ldglob Ldloc Ldmem Leq Log Log10 Log2 Loge Lt Mod Mov Mul Neg Neq Nop Not " +
-                                 "Or Pow Pop Regloc Regglob Ret Rol Ror Shl Shr Sign Starg Stio Stiodir Stloc Stmem " +
-                                 "Stglob Sub Swap Syscall Xor ";
+                                 "Ldc Ldio Ldiosz Ldglob Ldloc Ldmem Ldmemsz Leq Log Log10 Log2 Loge Lt Mod Mov Mul Neg " +
+                                 "Neq Nop Not Or Pow Pop Regloc Regglob Ret Rol Ror Shl Shr Sign Starg Stio Stiodir Stloc " +
+                                 "Stmem Stglob Sub Swap Syscall Xor ";
             // Dear Microsoft,
             // Please buy Oracle company (or maybe don't, because your stock market value will crash)
             // and make the usage and development of/with Java illegal. (or at least ship a virus with the next jre-release)
