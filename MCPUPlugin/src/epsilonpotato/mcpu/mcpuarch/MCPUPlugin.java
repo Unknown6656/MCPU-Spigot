@@ -7,6 +7,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldSaveEvent;
+
+import epsilonpotato.mcpu.core.EmulatedProcessorFactory;
 import epsilonpotato.mcpu.core.MCPUCore;
 
 
@@ -35,5 +37,11 @@ public final class MCPUPlugin extends MCPUCore implements Listener
     {
         // TODO Auto-generated method stub
         return false;
+    }
+
+    @Override
+    public void registerProcessorArchitectures()
+    {
+        EmulatedProcessorFactory.registerFactory("mcpuarch", new MCPUFactory());
     }
 }

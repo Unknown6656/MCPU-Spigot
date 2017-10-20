@@ -16,5 +16,7 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="/MCPU-Core/target/MCPU-Core-1.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/reflections-0.9.12-SNAPSHOT.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

@@ -10,13 +10,12 @@
 			<arguments>
 			</arguments>
 		</buildCommand>
-	<!--
 		<buildCommand>
 			<name>org.eclipse.m2e.core.maven2Builder</name>
+			<triggers></triggers>
 			<arguments>
 			</arguments>
 		</buildCommand>
-	-->
 		<buildCommand>
 			<name>org.eclipse.ui.externaltools.ExternalToolBuilder</name>
 			<triggers>full,incremental,</triggers>

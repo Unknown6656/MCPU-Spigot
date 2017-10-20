@@ -320,5 +320,58 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
         | ReturnStatement (Some x) ->
             [
                 procexpr x
+                [Ret]
             ]
+        | AbkStatement -> [[Abk]]
+        | HaltStatement -> [[Halt]]
         |> List.concat
+    let procvardecl (mi : byref<_>) f d =
+        let var = CreateASMVariable d
+        mapping.Add(d, f mi)
+        mi <- mi + 1s
+        var
+    let proclocdecl decl = procvardecl &locindex LocalScope decl
+    let procparam decl = procvardecl &argindex ArgumentScope decl
+    let rec collectlocdecl stm =
+        let rec fromstat stm =
+            let constrvar expr =
+                let var = {
+                            ASMVariable.Name = sprintf "________tmp_0x%016x" locindex
+                        }
+                arrassgnloc.Add(expr, locindex)
+                locindex <- locindex + 1s
+                var
+            match stm with
+            | ExpressionStatement (Expression e) -> [fromexpr e]
+            | ExpressionStatement (Nop) -> []
+            | CompoundStatement(loc, stms) -> 
+                [
+                    List.map proclocdecl loc
+                    List.collect collectlocdecl stms
+                ]
+            | IfStatement(c, s1, Some s2) ->
+                [
+                    fromexpr c
+                    List.collect collectlocdecl s1
+                    List.collect collectlocdecl s2
+                ]
+            | WhileStatement(c, s)
+            | IfStatement(c, s, None) ->
+                [
+                    fromexpr c
+                    List.collect collectlocdecl s
+                ]
+            | ReturnStatement(Some r) -> [fromexpr r]
+            | _ -> []
+           <| List.concat
+        and fromexpr = function
+                       | ScalarAssignmentExpression(_, e) -> [fromexpr e]
+                       | ArrayAssignmentOperatorExpression(_, n, _, e) as ae -> (fromexpr n)@[constrvar ae]@(fromexpr e)
+                       | ArrayAssignmentExpression(_, n, e) as ae -> (fromexpr n)@[constrvar ae]@(fromexpr e)
+                       | BinaryExpression(l, _, r) -> (fromexpr l)@(fromexpr r)
+                       | TernaryExpression(c, t, f) -> List.collect fromexpr [c;t;f]
+                       | ArrayIdentifierExpression(_, e)
+                       | UnaryExpression(_, e) -> [fromexpr e]
+                       | FunctionCallExpression(_, a) -> List.collect fromexpr a
+                       | _ -> []
+        fromstat stm
