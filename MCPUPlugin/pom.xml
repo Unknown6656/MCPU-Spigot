@@ -17,6 +17,7 @@
 			<groupId>org.bukkit</groupId>
 			<artifactId>bukkit</artifactId>
 			<version>1.12.2-R0.1-SNAPSHOT</version>
+            <scope>provided</scope>
 		</dependency>
 		<!-- MCPU CORE -->
 		<dependency>
@@ -64,6 +65,9 @@
 						<goals>
 							<goal>shade</goal>
 						</goals>
+                        <configuration>
+                            <shadedClassifierName>shaded</shadedClassifierName>
+                        </configuration>
 					</execution>
 				</executions>
 			</plugin>

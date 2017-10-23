@@ -16,7 +16,7 @@ public final class Ldmemsz extends MCPUOpcode
     @Override
     public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
-        int val = proc.MemorySize();
+        int val = proc.getMemorySize();
         
         frame.Push(val);
     }

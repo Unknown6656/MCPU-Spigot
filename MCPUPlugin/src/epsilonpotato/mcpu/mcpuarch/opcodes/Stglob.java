@@ -24,6 +24,6 @@ public final class Stglob extends MCPUOpcode
     {
         int value = frame.Pop();
         
-        proc.Globals(arguments[0], value);
+        proc.setGlobal(arguments[0], value);
     }
 }

@@ -1,16 +1,25 @@
 package epsilonpotato.mcpu.mcpuarch;
 
-import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import epsilonpotato.mcpu.core.EmulatedProcessorFactory;
-import epsilonpotato.mcpu.core.Triplet;
+import epsilonpotato.mcpu.core.MCPUCore;
+import epsilonpotato.mcpu.core.SquareEmulatedProcessorFactory;
 
-public final class MCPUFactory extends EmulatedProcessorFactory<MCPUProcessor>
+public final class MCPUFactory extends SquareEmulatedProcessorFactory<MCPUProcessor>
 {
     @Override
-    public MCPUProcessor createProcessor(Player p, Location l, Triplet<Integer, Integer, Integer> size, int iocount)
+    public MCPUProcessor createProcessor(MCPUCore caller, Player p, World w, int x, int y, int z, int iosidecount)
     {
-        return new MCPUProcessor(p, l.getWorld(), l.getBlockX(), l.getBlockY(), l.getBlockZ(), size.x, size.y, size.z, iocount);
+        try
+        {
+            return new MCPUProcessor(p, w, x, y, z, iosidecount);
+        }
+        catch (Exception e)
+        {
+            MCPUCore.Error(p, "Unable to create the processor due to the following reason:\n" + e);
+
+            return null;
+        }
     }
 }

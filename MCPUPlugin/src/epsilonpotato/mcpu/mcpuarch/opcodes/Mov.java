@@ -18,8 +18,8 @@ public final class Mov extends MCPUOpcode
     {
         int dst = frame.Pop();
         int src = frame.Pop();
-        int val = proc.Memory(src);
+        int val = proc.getMemory(src);
 
-        proc.Memory(dst, val);
+        proc.setMemory(dst, val);
     }
 }

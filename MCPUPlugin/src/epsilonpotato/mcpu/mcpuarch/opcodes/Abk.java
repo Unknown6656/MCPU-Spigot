@@ -34,17 +34,17 @@ public final class Abk extends MCPUOpcode
     {
         int num = -1;
         
-        synchronized (MCPUPlugin.cores)
+        synchronized (MCPUPlugin.circuits)
         {
-            for (int i : MCPUPlugin.cores.keySet())
-                if (MCPUPlugin.cores.get(i) == proc)
+            for (int i : MCPUPlugin.circuits.keySet())
+                if (MCPUPlugin.circuits.get(i) == proc)
                 {
                     num = i;
                     
                     break;
                 }
             
-            MCPUPlugin.cores.remove(num);
+            MCPUPlugin.circuits.remove(num);
         }
 
         Location pos = proc.getCenterLocation();

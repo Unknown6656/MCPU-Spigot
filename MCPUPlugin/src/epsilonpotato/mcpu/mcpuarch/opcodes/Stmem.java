@@ -20,6 +20,6 @@ public final class Stmem extends MCPUOpcode
         int val = frame.Pop();
         int addr = frame.Pop();
         
-        proc.Memory(addr, val);
+        proc.setMemory(addr, val);
     }
 }

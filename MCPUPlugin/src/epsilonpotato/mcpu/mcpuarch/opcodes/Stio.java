@@ -22,6 +22,6 @@ public final class Stio extends MCPUOpcode
         int value = frame.Pop();
         int port = frame.Pop();
         
-        proc.setIO(port, (byte)max(0, min(value, 15)));
+        proc.setIOValue(port, (byte)max(0, min(value, 15)));
     }
 }

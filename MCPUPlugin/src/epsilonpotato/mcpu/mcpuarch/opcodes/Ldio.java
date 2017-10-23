@@ -17,7 +17,7 @@ public final class Ldio extends MCPUOpcode
     public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
         int port = frame.Pop();
-        int value = proc.getIO(port);
+        int value = proc.getIOValue(port);
         
         frame.Push(value);
     }

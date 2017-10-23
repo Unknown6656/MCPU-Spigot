@@ -17,9 +17,9 @@ public class MCPUSyscalls
             StringBuilder sb = new StringBuilder();
             final int width = 8;
             
-            for (int i = 0, l = p.MemorySize(); i < l; ++i)
+            for (int i = 0, l = p.getMemorySize(); i < l; ++i)
             {
-                String data = String.format("%08x", p.Memory(i));
+                String data = String.format("%08x", p.getMemory(i));
 
                 sb.append(data + (((i % width) == 0) && (i > 0) ? '\n' : ' '));
             }

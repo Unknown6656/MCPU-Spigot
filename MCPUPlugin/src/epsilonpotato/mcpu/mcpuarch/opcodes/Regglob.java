@@ -24,13 +24,13 @@ public final class Regglob extends MCPUOpcode
     {
         int oldsz = proc.globalscount;
         int newsz = proc.globalscount = arguments[0];
-        int memlen = proc.MemorySize();
+        int memlen = proc.getMemorySize();
         
         if (oldsz < newsz)
             for (int i = oldsz; i < newsz; ++i)
-                proc.Globals(i, 0);
+                proc.setGlobal(i, 0);
         else
             for (int i = newsz; i < oldsz; ++i)
-                proc.Memory(memlen - i, 0);
+                proc.setMemory(memlen - i, 0);
     }
 }

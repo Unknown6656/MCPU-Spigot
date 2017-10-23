@@ -16,7 +16,7 @@ public final class Ldglob extends MCPUOpcode
     @Override
     public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
-        int local = proc.Globals(arguments[0]);
+        int local = proc.getGlobal(arguments[0]);
         
         frame.Push(local);
     }

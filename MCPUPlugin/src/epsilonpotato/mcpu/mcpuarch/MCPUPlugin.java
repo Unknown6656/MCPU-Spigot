@@ -8,7 +8,7 @@ import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldSaveEvent;
 
-import epsilonpotato.mcpu.core.EmulatedProcessorFactory;
+import epsilonpotato.mcpu.core.SquareEmulatedProcessorFactory;
 import epsilonpotato.mcpu.core.MCPUCore;
 
 
@@ -40,8 +40,15 @@ public final class MCPUPlugin extends MCPUCore implements Listener
     }
 
     @Override
-    public void registerProcessorArchitectures()
+    public void registerIntegratedCircuits()
     {
-        EmulatedProcessorFactory.registerFactory("mcpuarch", new MCPUFactory());
+        try
+        {
+            SquareEmulatedProcessorFactory.registerFactory("mcpuarch", new MCPUFactory());
+        }
+        catch (Exception e)
+        {
+            Error(null, "Unable to register component factories:\n" + e.toString());
+        }
     }
 }

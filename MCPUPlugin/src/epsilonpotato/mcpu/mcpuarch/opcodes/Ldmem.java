@@ -17,7 +17,7 @@ public final class Ldmem extends MCPUOpcode
     public final void Execute(int[] arguments, MCPUCallframe frame, MCPUProcessor proc)
     {
         int addr = frame.Pop();
-        int val = proc.Memory(addr);
+        int val = proc.getMemory(addr);
         
         frame.Push(val);
     }
