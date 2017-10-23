@@ -2,11 +2,6 @@
 package epsilonpotato.mcpu.mcpuarch;
 
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.Stack;
 
 import org.bukkit.entity.Player;
@@ -15,7 +10,6 @@ import epsilonpotato.mcpu.core.EmulatedProcessorEvent;
 import epsilonpotato.mcpu.core.Parallel;
 import epsilonpotato.mcpu.core.SquareEmulatedProcessor;
 import epsilonpotato.mcpu.core.Triplet;
-import epsilonpotato.mcpu.core.Tuple;
 
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -24,7 +18,7 @@ import org.bukkit.World;
 public final class MCPUProcessor extends SquareEmulatedProcessor
 {
     private final Stack<MCPUCallframe> callstack = new Stack<>();
-    private final int[] memory = new int[4096];
+    private final int[] memory = new int[1024];
     private MCPUInstruction[] instructions;
     public int globalscount;
     
