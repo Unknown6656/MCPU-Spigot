@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.15
+VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCPUCompiler", "MCPUCompiler\MCPUCompiler.csproj", "{9A5B2146-3701-47AA-8B03-62ECBC3D004A}"
 EndProject
@@ -10,6 +10,8 @@ EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MCPUCoreCompiler", "MCPUCoreCompiler\MCPUCoreCompiler.fsproj", "{5CE6FF22-7C79-4DC2-B569-D56A99D83F74}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Piglet", "Piglet\Piglet\Piglet.csproj", "{1E23F251-94E1-4504-81E8-2618F5C9FEA3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ForceOverwrite", "ForceOverwrite\ForceOverwrite.csproj", "{8B9DE5A5-5762-4122-84A5-40B543A03FAE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{1E23F251-94E1-4504-81E8-2618F5C9FEA3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E23F251-94E1-4504-81E8-2618F5C9FEA3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1E23F251-94E1-4504-81E8-2618F5C9FEA3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B9DE5A5-5762-4122-84A5-40B543A03FAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B9DE5A5-5762-4122-84A5-40B543A03FAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B9DE5A5-5762-4122-84A5-40B543A03FAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B9DE5A5-5762-4122-84A5-40B543A03FAE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
