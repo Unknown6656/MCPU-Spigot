@@ -33,6 +33,13 @@
 			<version>0.9.11</version>
 			<scope>compile</scope>
 		</dependency>
+        <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
+		<dependency>
+		    <groupId>com.google.protobuf</groupId>
+		    <artifactId>protobuf-java</artifactId>
+		    <version>3.4.0</version>
+			<scope>compile</scope>
+		</dependency>
 	</dependencies>
 	<build>
 		<!-- <finalName>MCPUPlugin</finalName> -->

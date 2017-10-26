@@ -1,7 +1,9 @@
 package epsilonpotato.mcpu.mcpuarch.opcodes;
 
+import epsilonpotato.mcpu.mcpuarch.MCPUOpcodeNumber;
 import epsilonpotato.mcpu.mcpuarch.UnaryOpcode;
 
+@MCPUOpcodeNumber(0x2f)
 public final class Log2 extends UnaryOpcode
 {
     /** fuck java */

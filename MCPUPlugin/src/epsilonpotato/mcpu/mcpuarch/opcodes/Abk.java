@@ -10,10 +10,12 @@ import org.bukkit.block.Block;
 
 import epsilonpotato.mcpu.mcpuarch.MCPUCallframe;
 import epsilonpotato.mcpu.mcpuarch.MCPUOpcode;
+import epsilonpotato.mcpu.mcpuarch.MCPUOpcodeNumber;
 import epsilonpotato.mcpu.mcpuarch.MCPUProcessor;
 import epsilonpotato.mcpu.mcpuarch.MCPUPlugin;
 
 
+@MCPUOpcodeNumber(0x48)
 public final class Abk extends MCPUOpcode
 {
     @Override

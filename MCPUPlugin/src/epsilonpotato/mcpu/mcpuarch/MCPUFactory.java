@@ -17,8 +17,12 @@ public final class MCPUFactory extends SquareEmulatedProcessorFactory<MCPUProces
         }
         catch (Exception e)
         {
-            MCPUCore.Error(p, "Unable to create the processor due to the following reason:\n" + e);
+            e.printStackTrace();
+            
+            MCPUCore.Error(p, "Unable to create the processor due to the following reason:\n" + e.toString());
 
+            context.rollback();
+            
             return null;
         }
     }

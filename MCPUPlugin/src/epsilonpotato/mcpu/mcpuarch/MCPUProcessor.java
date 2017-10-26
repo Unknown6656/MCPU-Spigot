@@ -2,14 +2,18 @@
 package epsilonpotato.mcpu.mcpuarch;
 
 
+import java.io.IOException;
 import java.util.Stack;
+import java.util.logging.Level;
 
 import org.bukkit.entity.Player;
 
 import epsilonpotato.mcpu.core.EmulatedProcessorEvent;
-import epsilonpotato.mcpu.core.Parallel;
+import epsilonpotato.mcpu.core.MCPUCore;
 import epsilonpotato.mcpu.core.SquareEmulatedProcessor;
-import epsilonpotato.mcpu.core.Triplet;
+import epsilonpotato.mcpu.util.Parallel;
+import epsilonpotato.mcpu.util.Serializer;
+import epsilonpotato.mcpu.util.Triplet;
 
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -17,13 +21,13 @@ import org.bukkit.World;
 
 public final class MCPUProcessor extends SquareEmulatedProcessor
 {
-    private final Stack<MCPUCallframe> callstack = new Stack<>();
-    private final int[] memory = new int[1024];
+    private Stack<MCPUCallframe> callstack = new Stack<>();
     private MCPUInstruction[] instructions;
+    private int[] memory = new int[1024];
     public int globalscount;
     
     public int InstructionPointer;
-    private Triplet<Integer, Integer, Integer> Location;
+    private Triplet<Integer, Integer, Integer> location;
     
     public EmulatedProcessorEvent<MCPUInstruction> onInstructionExecuted;
     public EmulatedProcessorEvent<MCPUInstruction> onInstructionLoaded;
@@ -59,7 +63,10 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
     
     public void clearMemory()
     {
-        Parallel.For(0, memory.length, i -> memory[i] = 0);
+        if (memory == null)
+            memory = new int[1024];
+        else
+            Parallel.For(0, memory.length, i -> memory[i] = 0);
     }
 
     public int getMemory(int addr)
@@ -114,7 +121,7 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
                 raise(onInstructionLoaded, current);
                 
                 MCPUCallframe frame = callstack.peek();
-                MCPUOpcode opcode = current.GetOPCode();
+                MCPUOpcode opcode = current.getOPCode();
                 
                 getSign(s -> s.setLine(2, opcode.toString()));
                 
@@ -140,7 +147,7 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
                     
                     if (current != null)
                     {
-                        MCPUOpcode opc = current.GetOPCode();
+                        MCPUOpcode opc = current.getOPCode();
                         
                         getSign(s -> s.setLine(2, opc.toString()));
                     }
@@ -175,7 +182,11 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
         
         instructions = new MCPUInstruction[0];
         InstructionPointer = -1;
-        callstack.clear();
+        
+        if (callstack == null)
+            callstack = new Stack<>();
+        else
+            callstack.clear();
         
         getSign(s -> s.setLine(2, ""));
         setTicks(0);
@@ -206,6 +217,8 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
         
         if (res.Success)
             load(res.Instructions);
+        else
+            MCPUCore.log.log(Level.INFO, res.ErrorMessage);
         
         return res.Success;
     }
@@ -221,7 +234,7 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
             
             PushCall(new MCPUCallframe());
             
-            getSign(s -> s.setLine(2, InstructionPointer < instructions.length ? instructions[InstructionPointer].GetOPCode().toString() : "---"));
+            getSign(s -> s.setLine(2, InstructionPointer < instructions.length ? instructions[InstructionPointer].getOPCode().toString() : "---"));
         }
     }
 
@@ -267,7 +280,7 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
     
     public String getState()
     {
-        return String.format("(%d|%d|%d) created by %s (%s), %s, %s", Location.x, Location.y, Location.z, creator.getDisplayName(), creator.getAddress().toString(), canrun ? "running" :
+        return String.format("(%d|%d|%d) created by %s (%s), %s, %s", location.x, location.y, location.z, creator.getDisplayName(), creator.getAddress().toString(), canrun ? "running" :
                                                                                                                                                                             "halted", isEnabled() ?
                                                                                                                                                                                                   "enabled" :
                                                                                                                                                                                                   "disabled");
@@ -276,5 +289,64 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
     public Location getCenterLocation()
     {
         return new Location(world, x + (xsize - 1) / 2, y, z + (zsize - 1) / 2);
+    }
+
+    
+    @Override
+    protected void deserializeProcessorState(byte[] state) throws IOException
+    {
+        Serializer.getBinaryReader(state, rd ->
+        {
+            memory = rd.readInts();
+            globalscount = rd.readInt();
+            InstructionPointer = rd.readInt();
+
+            int len = rd.readInt();
+            
+            instructions = new MCPUInstruction[len];
+            
+            for (int i = 0; i < len; ++i)
+            {
+                int opc = rd.readInt();
+                int[] argv = rd.readInts();
+
+                instructions[i] = new MCPUInstruction(MCPUOpcode.get(opc), argv);
+            }
+            
+            location = new Triplet<>(rd.readInt(), rd.readInt(), rd.readInt());
+            
+            
+            // TODO : callstack
+        });
+    }
+
+    
+    @Override
+    protected byte[] serializeProcessorState() throws IOException
+    {
+        return Serializer.fromBinaryWriter(wr ->
+        {
+            wr.write(memory);
+            wr.write(globalscount);
+            wr.write(InstructionPointer);
+            wr.write(instructions == null ? 0 : instructions.length);
+            
+            if (instructions != null)
+                for (MCPUInstruction ins : instructions)
+                {
+                    int opc = ins.getOPCode().getNumber();
+                    int[] argv = ins.getArguments();
+                    
+                    wr.write(opc);
+                    wr.write(argv);
+                }
+            
+            wr.write(location.x);
+            wr.write(location.y);
+            wr.write(location.z);
+
+            
+            // TODO : callstack
+        });
     }
 }

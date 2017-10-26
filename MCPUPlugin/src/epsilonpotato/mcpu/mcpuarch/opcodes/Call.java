@@ -2,6 +2,7 @@ package epsilonpotato.mcpu.mcpuarch.opcodes;
 
 import epsilonpotato.mcpu.mcpuarch.MCPUCallframe;
 import epsilonpotato.mcpu.mcpuarch.MCPUOpcode;
+import epsilonpotato.mcpu.mcpuarch.MCPUOpcodeNumber;
 import epsilonpotato.mcpu.mcpuarch.MCPUProcessor;
 
 
@@ -16,6 +17,7 @@ import epsilonpotato.mcpu.mcpuarch.MCPUProcessor;
  * last callee argument: top of stack
  * </pre>
  */
+@MCPUOpcodeNumber(0x16)
 public final class Call extends MCPUOpcode
 {
     @Override

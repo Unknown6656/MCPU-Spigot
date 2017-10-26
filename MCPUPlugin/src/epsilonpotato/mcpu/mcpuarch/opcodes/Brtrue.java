@@ -2,9 +2,11 @@ package epsilonpotato.mcpu.mcpuarch.opcodes;
 
 import epsilonpotato.mcpu.mcpuarch.MCPUCallframe;
 import epsilonpotato.mcpu.mcpuarch.MCPUOpcode;
+import epsilonpotato.mcpu.mcpuarch.MCPUOpcodeNumber;
 import epsilonpotato.mcpu.mcpuarch.MCPUProcessor;
 
 
+@MCPUOpcodeNumber(0x13)
 public final class Brtrue extends MCPUOpcode
 {
     @Override

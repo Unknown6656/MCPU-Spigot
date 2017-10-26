@@ -2,7 +2,7 @@ package epsilonpotato.mcpu.mcpuarch;
 
 import java.util.LinkedList;
 
-import epsilonpotato.mcpu.core.Tuple;
+import epsilonpotato.mcpu.util.Tuple;
 
 
 public final class PrecompiledInstruction

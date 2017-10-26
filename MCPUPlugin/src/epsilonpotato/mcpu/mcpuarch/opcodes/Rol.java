@@ -1,7 +1,9 @@
 package epsilonpotato.mcpu.mcpuarch.opcodes;
 
 import epsilonpotato.mcpu.mcpuarch.BinaryOpcode;
+import epsilonpotato.mcpu.mcpuarch.MCPUOpcodeNumber;
 
+@MCPUOpcodeNumber(0x33)
 public final class Rol extends BinaryOpcode
 {
     public Rol()

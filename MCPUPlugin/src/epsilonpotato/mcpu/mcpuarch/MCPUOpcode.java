@@ -7,16 +7,19 @@ import java.util.LinkedList;
 
 import org.reflections.Reflections;
 
+import epsilonpotato.mcpu.util.Tuple;
+
 
 public abstract class MCPUOpcode
 {
-    static final HashMap<String, MCPUOpcode> Opcodes = new HashMap<>();
+    static final HashMap<String, MCPUOpcode> OpcodesS = new HashMap<>();
+    static final HashMap<Integer, MCPUOpcode> OpcodesN = new HashMap<>();
     
     static
     {
         // Why does java not have proper reflection? Why does it not have proper assembly metadata?
         final String pack = "epsilonpotato.mcpu.mcpuarch.opcodes";
-        LinkedList<MCPUOpcode> opc = new LinkedList<>();
+        LinkedList<Tuple<MCPUOpcode, Integer>> opc = new LinkedList<>();
         
         try
         {
@@ -26,7 +29,7 @@ public abstract class MCPUOpcode
             for (Class<? extends MCPUOpcode> stype : reflections.getSubTypesOf(MCPUOpcode.class))
                 try
                 {
-                    opc.add(stype.newInstance());
+                    tryAdd(opc, stype);
                 }
                 catch (Exception e)
                 {
@@ -50,17 +53,18 @@ public abstract class MCPUOpcode
             for (String name : instr.split(" "))
                 try
                 {
-                    Class<?> type = Class.forName(pack + '.' + name);
-                    
-                    opc.add((MCPUOpcode)type.newInstance());
+                    tryAdd(opc, Class.forName(pack + '.' + name));
                 }
                 catch (Exception x)
                 {
                 }
         }
         
-        for (MCPUOpcode c : opc)
-            Opcodes.put(c.toString(), c);
+        for (Tuple<MCPUOpcode, Integer> t : opc)
+        {
+            OpcodesS.put(t.x.toString(), t.x);
+            OpcodesN.put(t.y, t.x);
+        }
     }
     
     
@@ -80,5 +84,33 @@ public abstract class MCPUOpcode
     public String toString()
     {
         return getClass().getSimpleName().toLowerCase();
+    }
+
+    
+    public int getNumber()
+    {
+        return this.getClass().getAnnotation(MCPUOpcodeNumber.class).value();
+    }
+
+    private static boolean tryAdd(LinkedList<Tuple<MCPUOpcode, Integer>> opc, Class<?> type)
+    {
+        try
+        {
+            MCPUOpcode opcode = (MCPUOpcode)type.newInstance();
+            MCPUOpcodeNumber num = opcode.getClass().getAnnotation(MCPUOpcodeNumber.class);
+            
+            opc.add(new Tuple<>(opcode, (int)num.value()));
+            
+            return true;
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+    }
+    
+    public static MCPUOpcode get(int opc)
+    {
+        return OpcodesN.get(opc);
     }
 }

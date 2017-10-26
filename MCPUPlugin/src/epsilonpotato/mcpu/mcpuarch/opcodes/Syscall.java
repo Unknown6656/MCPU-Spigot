@@ -2,10 +2,12 @@ package epsilonpotato.mcpu.mcpuarch.opcodes;
 
 import epsilonpotato.mcpu.mcpuarch.MCPUCallframe;
 import epsilonpotato.mcpu.mcpuarch.MCPUOpcode;
+import epsilonpotato.mcpu.mcpuarch.MCPUOpcodeNumber;
 import epsilonpotato.mcpu.mcpuarch.MCPUProcessor;
 import epsilonpotato.mcpu.mcpuarch.MCPUSyscalls;
 
 
+@MCPUOpcodeNumber(0x15)
 public final class Syscall extends MCPUOpcode
 {
     @Override

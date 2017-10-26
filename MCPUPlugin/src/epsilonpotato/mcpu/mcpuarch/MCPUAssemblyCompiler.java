@@ -6,7 +6,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import epsilonpotato.mcpu.core.Tuple;
+import epsilonpotato.mcpu.util.Tuple;
 
 
 public final class MCPUAssemblyCompiler
@@ -32,7 +32,7 @@ public final class MCPUAssemblyCompiler
         for (int linenr = 0; linenr < lines.length; ++linenr)
         {
             String line = lines[linenr];
-            Pattern pmcesc = Pattern.compile("§[0-9a-fklmnor]");
+            Pattern pmcesc = Pattern.compile("ï¿½[0-9a-fklmnor]");
             Matcher match = pmcesc.matcher(line);
             
             line = match.replaceAll("");
@@ -65,7 +65,7 @@ public final class MCPUAssemblyCompiler
                 else
                     labels.put(line, linenr);
                 
-                preinstr.add(new PrecompiledInstruction(MCPUOpcode.Opcodes.get("nop")));
+                preinstr.add(new PrecompiledInstruction(MCPUOpcode.OpcodesS.get("nop")));
             }
             else
             {
@@ -78,11 +78,11 @@ public final class MCPUAssemblyCompiler
                     String instr = match.group("instr");
                     String[] rargs = match.group("args").trim().split("\\s+");
                     
-                    if (!MCPUOpcode.Opcodes.containsKey(instr))
+                    if (!MCPUOpcode.OpcodesS.containsKey(instr))
                         Error(cleaned.y, errors, linenr, "The instruction '" + instr + "' could not be found.");
                     else
                     {
-                        MCPUOpcode opcode = MCPUOpcode.Opcodes.get(instr);
+                        MCPUOpcode opcode = MCPUOpcode.OpcodesS.get(instr);
                         int i = 0;
                         
                         if (opcode.MinimumArgumentCount() > rargs.length)
@@ -129,7 +129,7 @@ public final class MCPUAssemblyCompiler
                 else if (line.trim().length() > 0)
                     Error(cleaned.y, errors, linenr, "The expression '" + line + "' could not be parsed.");
                 else
-                    preinstr.add(new PrecompiledInstruction(MCPUOpcode.Opcodes.get("nop")));
+                    preinstr.add(new PrecompiledInstruction(MCPUOpcode.OpcodesS.get("nop")));
             }
         }
         

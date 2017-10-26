@@ -4,9 +4,11 @@ import static java.lang.Math.*;
 
 import epsilonpotato.mcpu.mcpuarch.MCPUCallframe;
 import epsilonpotato.mcpu.mcpuarch.MCPUOpcode;
+import epsilonpotato.mcpu.mcpuarch.MCPUOpcodeNumber;
 import epsilonpotato.mcpu.mcpuarch.MCPUProcessor;
 
 
+@MCPUOpcodeNumber(0x0a)
 public final class Stio extends MCPUOpcode
 {
     // stio port val

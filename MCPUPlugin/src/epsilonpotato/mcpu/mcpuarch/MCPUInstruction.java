@@ -21,9 +21,14 @@ public final class MCPUInstruction
             proc.stop();
     }
     
-    public MCPUOpcode GetOPCode()
+    public MCPUOpcode getOPCode()
     {
         return opcode;
+    }
+    
+    public int[] getArguments()
+    {
+        return arguments;
     }
     
     @Override
