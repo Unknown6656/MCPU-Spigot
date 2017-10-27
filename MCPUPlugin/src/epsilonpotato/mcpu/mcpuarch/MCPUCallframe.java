@@ -5,7 +5,7 @@ import java.util.Stack;
 
 public final class MCPUCallframe
 {
-    private final Stack<Integer> Stack = new Stack<>();
+    protected final Stack<Integer> Stack = new Stack<>();
     public int[] Arguments = new int[0];
     public int[] Locals = new int[0];
     

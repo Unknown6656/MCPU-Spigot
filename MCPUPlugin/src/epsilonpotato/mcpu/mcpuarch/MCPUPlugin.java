@@ -4,13 +4,9 @@ package epsilonpotato.mcpu.mcpuarch;
 
 import java.util.HashMap;
 
-import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Listener;
-import org.bukkit.event.world.WorldInitEvent;
-import org.bukkit.event.world.WorldLoadEvent;
-import org.bukkit.event.world.WorldSaveEvent;
 
 import epsilonpotato.mcpu.core.SquareEmulatedProcessorFactory;
 import epsilonpotato.mcpu.util.Tuple;
@@ -27,31 +23,8 @@ public final class MCPUPlugin extends MCPUCore implements Listener
         // TODO : possibly add more options
         
         super(usageoptions);
-    }
-    
 
-    @Override
-    public void onWorldSaveEvent(WorldSaveEvent event)
-    {
-        // TODO Auto-generated method stub
-
-        Print(ChatColor.AQUA, "W SAVE");
-    }
-    
-    @Override
-    public void onWorldLoadEvent(WorldLoadEvent event)
-    {
-        // TODO Auto-generated method stub
-
-        Print(ChatColor.AQUA, "W LOAD");
-    }
-    
-    @Override
-    public void onWorldInitEvent(WorldInitEvent event)
-    {
-        // TODO Auto-generated method stub
-        
-        Print(ChatColor.AQUA, "W INIT");
+        System.out.println("Loaded " + MCPUOpcode.OpcodesS.size() + " MCPU Instructions:\n\t " + String.join(", ", MCPUOpcode.OpcodesS.keySet()));
     }
     
     @Override

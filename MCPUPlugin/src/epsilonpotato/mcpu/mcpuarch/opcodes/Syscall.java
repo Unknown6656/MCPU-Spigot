@@ -22,6 +22,6 @@ public final class Syscall extends MCPUOpcode
         int num = arguments[1];
         MCPUSyscalls.Syscall call = MCPUSyscalls.syscalls.get(num);
         
-        call.Execute(frame, proc);
+        call.Execute(frame, proc, arguments);
     }
 }

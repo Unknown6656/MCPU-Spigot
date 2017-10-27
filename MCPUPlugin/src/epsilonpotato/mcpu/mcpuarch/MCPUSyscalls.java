@@ -11,8 +11,8 @@ public class MCPUSyscalls
     
     static
     {
-        syscalls.put(1, (f, p) -> MCPUPlugin.Print(p.getCreator(), ChatColor.WHITE, String.format("%d (0x%08x)", f.Peek(), f.Peek())));
-        syscalls.put(2, (f, p) ->
+        syscalls.put(1, (f, p, a) -> MCPUPlugin.Print(p.getCreator(), ChatColor.WHITE, String.format("%d (0x%08x)", f.Peek(), f.Peek())));
+        syscalls.put(2, (f, p, a) ->
         {
             StringBuilder sb = new StringBuilder();
             final int width = 8;
@@ -26,11 +26,25 @@ public class MCPUSyscalls
 
             MCPUPlugin.Print(p.getCreator(), ChatColor.WHITE, sb.toString());
         });
+        syscalls.put(0, (f, p, a) ->
+        {
+            byte[] bytes = new byte[a.length * 4];
+            
+            for (int i = 0; i < a.length; ++i)
+            {
+                bytes[i * 4] = (byte)((a[i] >>> 24) & 0xff);
+                bytes[i * 4 + 1] = (byte)((a[i] >> 16) & 0xff);
+                bytes[i * 4 + 2] = (byte)((a[i] >> 8) & 0xff);
+                bytes[i * 4 + 3] = (byte)(a[i] & 0xff);
+            }
+
+            MCPUPlugin.Print(p.getCreator(), ChatColor.WHITE, new String(bytes)); 
+        });
     }
     
     
     public interface Syscall
     {
-        public void Execute(MCPUCallframe frame, MCPUProcessor proc);
+        public void Execute(MCPUCallframe frame, MCPUProcessor proc, int[] args);
     }
 }

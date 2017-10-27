@@ -1,4 +1,6 @@
+
 package epsilonpotato.mcpu.mcpuarch;
+
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -6,17 +8,44 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.bukkit.ChatColor;
+
+import epsilonpotato.mcpu.util.Parallel;
 import epsilonpotato.mcpu.util.Tuple;
 
 
 public final class MCPUAssemblyCompiler
 {
+    public static MCPUInstruction[] fromBytes(byte[] raw)
+    {
+        int[] arr = new int[raw.length / 4];
+        
+        Parallel.For(0, arr.length, i -> arr[i] = (raw[i] << 24) | (raw[i + 1] << 16) | (raw[i + 2] << 8) | raw[i + 3]);
+        
+        MCPUInstruction[] ins = new MCPUInstruction[arr[0]];
+        int offs = 1;
+        
+        for (int i = 0; i < ins.length; ++i)
+        {
+            int opc = arr[offs++];
+            int len = arr[offs++];
+            int[] args = new int[len];
+            
+            for (int j = 0; j < len; ++j)
+                args[j] = arr[offs++];
+            
+            ins[i] = new MCPUInstruction(MCPUOpcode.get(opc), args);
+        }
+        
+        return ins;
+    }
+    
     public static MCPUCompilerResult Compile(String code)
     {
         if (code == null)
             code = "";
-        
-        return Compile(code.replaceAll("\\r\\n", "\n").replaceAll("\\n\\r", "\n").split("[\\r\\n]"));
+
+        return Compile(code.replaceAll("\\r\\n", "\n").replaceAll("\\n\\r", "\n").trim().split("[\\r\\n]"));
     }
     
     public static MCPUCompilerResult Compile(String[] lines)
@@ -26,20 +55,20 @@ public final class MCPUAssemblyCompiler
         final HashMap<String, Integer> unresolved = new HashMap<>();
         final HashMap<String, Integer> labels = new HashMap<>();
         final LinkedList<String> errors = new LinkedList<>();
+        final Pattern pline = Pattern.compile("(?<instr>[a-z]\\w*)((?<args>(\\s+([0-9]+|0?x[0-9a-f]+|true|false|[a-z_]\\w*))*)|\\\"(?<strarg>[^\\\"]*)\\\")");
+        Matcher match;
         
         lines = cleaned.x;
         
         for (int linenr = 0; linenr < lines.length; ++linenr)
         {
             String line = lines[linenr];
-            Pattern pmcesc = Pattern.compile("�[0-9a-fklmnor]");
-            Matcher match = pmcesc.matcher(line);
-            
-            line = match.replaceAll("");
+
+            line = ChatColor.stripColor(line);
             
             if (line.matches("^[a-z_]\\w*\\:"))
             {
-                line = line.substring(0, line.indexOf(':'));
+                line = line.substring(0, line.indexOf(':')).toLowerCase();
                 
                 if (labels.containsKey(line))
                     Error(cleaned.y, errors, linenr, "The label/function '" + line + "' does already exist.");
@@ -69,60 +98,81 @@ public final class MCPUAssemblyCompiler
             }
             else
             {
-                Pattern pline = Pattern.compile("(?<instr>[a-z]\\w*)(?<args>(\\s+([0-9]+|0?x[0-9a-f]+|true|false|[a-z_]\\w*))*)");
-                
                 match = pline.matcher(line);
                 
-                if (match.matches())
+                if (match.find())
                 {
                     String instr = match.group("instr");
-                    String[] rargs = match.group("args").trim().split("\\s+");
                     
-                    if (!MCPUOpcode.OpcodesS.containsKey(instr))
+                    if (instr == null || instr == "null")
+                        instr = "nop";
+
+                    if (!MCPUOpcode.OpcodesS.containsKey(instr.toLowerCase()))
                         Error(cleaned.y, errors, linenr, "The instruction '" + instr + "' could not be found.");
                     else
                     {
                         MCPUOpcode opcode = MCPUOpcode.OpcodesS.get(instr);
+                        PrecompiledInstruction ins = new PrecompiledInstruction(opcode);
+                        String strarg = match.group("strarg");
+                        String[] rargs = null;
                         int i = 0;
                         
-                        if (opcode.MinimumArgumentCount() > rargs.length)
-                            Error(cleaned.y, errors, linenr, "The instruction '" + instr + "' requires at least " + opcode.MinimumArgumentCount() +
-                                                             " arguments.");
-                        else
+                        if (strarg != null)
                         {
-                            PrecompiledInstruction ins = new PrecompiledInstruction(opcode);
+                            byte[] bytes = strarg.getBytes();
+                            int[] iargs = new int[(int)Math.ceil(bytes.length / 4.0)];
                             
-                            for (String arg : rargs)
-                                try
-                                {
-                                    arg = arg.trim();
-                                    
-                                    if (arg.length() > 0)
-                                    {
-                                        if (arg.matches("[0-9]+"))
-                                            ins.AddArgument(Integer.parseInt(arg), PrecompiledArgumentType.RAW);
-                                        else if (arg.matches("0?x[0-9a-f]+"))
-                                            ins.AddArgument(Integer.parseInt(arg.substring(arg.indexOf('x') + 1), 16), PrecompiledArgumentType.RAW);
-                                        else if (arg.matches("(true|false)"))
-                                            ins.AddArgument(Boolean.parseBoolean(arg) ? 1 : 0, PrecompiledArgumentType.RAW);
-                                        else if (!labels.containsKey(arg))
-                                        {
-                                            unresolved.put(arg, linenr);
-                                            
-                                            ins.AddArgument(linenr, PrecompiledArgumentType.UNRESOLVED);
-                                        }
-                                        else
-                                            ins.AddArgument(labels.get(arg), PrecompiledArgumentType.LABEL);
-                                        
-                                        ++i;
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    Error(cleaned.y, errors, linenr, "The argument no. " + (i + 1) + " ('" + arg + "') could not be parsed.");
-                                }
+                            Parallel.For(0, iargs.length, j -> iargs[j] = (bytes[j] << 24) |
+                                                                          (j + 1 < iargs.length ? (bytes[j + 1] << 16) : 0) |
+                                                                          (j + 2 < iargs.length ? (bytes[j + 2] << 8) : 0) |
+                                                                          (j + 3 < iargs.length ? bytes[j + 3] : 0));
+
+                            for (int arg : iargs)
+                                ins.AddArgument(arg, PrecompiledArgumentType.RAW);
                             
                             preinstr.add(ins);
+                        }
+                        else
+                        {
+                            rargs = match.group("args").trim().split("\\s+");
+
+                            if (opcode.MinimumArgumentCount() > rargs.length)
+                                Error(cleaned.y, errors, linenr, "The instruction '" + instr + "' requires at least " + opcode.MinimumArgumentCount() + " arguments.");
+                            else
+                            {
+                                for (String arg : rargs)
+                                    if (arg != null)
+                                        try
+                                        {
+                                            arg = arg.trim().toLowerCase();
+                                            
+                                            if (arg.length() > 0)
+                                            {
+                                                if (arg.matches("[0-9]+"))
+                                                    ins.AddArgument(Integer.parseInt(arg), PrecompiledArgumentType.RAW);
+                                                else if (arg.matches("0?x[0-9a-f]+"))
+                                                    ins.AddArgument(Integer.parseInt(arg.substring(arg.indexOf('x') + 1), 16), PrecompiledArgumentType.RAW);
+                                                else if (arg.matches("(true|false)"))
+                                                    ins.AddArgument(Boolean.parseBoolean(arg) ? 1 : 0, PrecompiledArgumentType.RAW);
+                                                else if (!labels.containsKey(arg))
+                                                {
+                                                    unresolved.put(arg, linenr);
+                                                    
+                                                    ins.AddArgument(linenr, PrecompiledArgumentType.UNRESOLVED);
+                                                }
+                                                else
+                                                    ins.AddArgument(labels.get(arg), PrecompiledArgumentType.LABEL);
+                                                
+                                                ++i;
+                                            }
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            Error(cleaned.y, errors, linenr, "The argument no. " + (i + 1) + " ('" + arg + "') could not be parsed.");
+                                        }
+                                
+                                preinstr.add(ins);
+                            }
                         }
                     }
                 }

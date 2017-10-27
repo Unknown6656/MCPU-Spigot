@@ -4,7 +4,6 @@ package epsilonpotato.mcpu.mcpuarch;
 
 import java.io.IOException;
 import java.util.Stack;
-import java.util.logging.Level;
 
 import org.bukkit.entity.Player;
 
@@ -15,6 +14,7 @@ import epsilonpotato.mcpu.util.Parallel;
 import epsilonpotato.mcpu.util.Serializer;
 import epsilonpotato.mcpu.util.Triplet;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 
@@ -218,7 +218,7 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
         if (res.Success)
             load(res.Instructions);
         else
-            MCPUCore.log.log(Level.INFO, res.ErrorMessage);
+            MCPUCore.Print(creator, ChatColor.RED, res.ErrorMessage);
         
         return res.Success;
     }
@@ -314,9 +314,21 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
             }
             
             location = new Triplet<>(rd.readInt(), rd.readInt(), rd.readInt());
+            callstack = new Stack<>();
+            len = rd.readInt();
             
-            
-            // TODO : callstack
+            for (int i = 0; i < len; ++i)
+            {
+                MCPUCallframe frame = new MCPUCallframe();
+
+                frame.Locals = rd.readInts();
+                frame.Arguments = rd.readInts();
+
+                for (int v : rd.readInts())
+                    frame.Stack.push(v);
+                        
+                callstack.push(frame);
+            }
         });
     }
 
@@ -344,9 +356,17 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
             wr.write(location.x);
             wr.write(location.y);
             wr.write(location.z);
-
+            wr.write(callstack.size());
             
-            // TODO : callstack
+            for (MCPUCallframe frame : callstack)
+            {
+                wr.write(frame.Locals);
+                wr.write(frame.Arguments);
+                wr.write(frame.StackSize());
+                
+                for (int v : frame.Stack)
+                    wr.write(v);
+            }
         });
     }
 }
