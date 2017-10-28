@@ -6,5 +6,5 @@ A MCPU-plugin for spigot servers
 ## DOCUMENTATION WILL COME SOON ENOUGH
 
 
-7-Segment test:<br/>
-[![https://www.youtube.com/watch?v=lwSwDqQ2wSk](https://img.youtube.com/vi/lwSwDqQ2wSk/0.jpg)](https://www.youtube.com/watch?v=lwSwDqQ2wSk)
+Showing a few components:<br/>
+[![https://youtu.be/eZRbGriYSng](https://img.youtube.com/vi/eZRbGriYSng/0.jpg)](https://youtu.be/eZRbGriYSng)
