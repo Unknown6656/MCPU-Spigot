@@ -5,4 +5,6 @@ A MCPU-plugin for spigot servers
 
 ## DOCUMENTATION WILL COME SOON ENOUGH
 
-### I hate Java
+
+Showing a few components:<br/>
+[![https://youtu.be/eZRbGriYSng](https://img.youtube.com/vi/eZRbGriYSng/0.jpg)](https://youtu.be/eZRbGriYSng)
