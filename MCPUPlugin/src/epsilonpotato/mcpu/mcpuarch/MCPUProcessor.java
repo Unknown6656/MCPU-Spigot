@@ -27,7 +27,6 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
     public int globalscount;
     
     public int InstructionPointer;
-    private Triplet<Integer, Integer, Integer> location;
     
     public EmulatedProcessorEvent<MCPUInstruction> onInstructionExecuted;
     public EmulatedProcessorEvent<MCPUInstruction> onInstructionLoaded;
@@ -48,7 +47,7 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
     {
         return memory == null ? -1 : memory.length;
     }
-
+    
     private boolean CheckMemoryAddress(int addr)
     {
         boolean res;
@@ -68,7 +67,7 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
         else
             Parallel.For(0, memory.length, i -> memory[i] = 0);
     }
-
+    
     public int getMemory(int addr)
     {
         return CheckMemoryAddress(addr) ? memory[addr] : 0;
@@ -79,7 +78,7 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
         if (CheckMemoryAddress(addr))
             memory[addr] = value;
     }
-
+    
     public int getGlobal(int addr)
     {
         if ((addr >= globalscount) || (addr < 0))
@@ -237,7 +236,7 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
             getSign(s -> s.setLine(2, InstructionPointer < instructions.length ? instructions[InstructionPointer].getOPCode().toString() : "---"));
         }
     }
-
+    
     public String AssemblyInstructions()
     {
         StringBuilder sb = new StringBuilder();
@@ -269,7 +268,7 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
         if (evt != null)
             evt.Raise(this, data);
     }
-
+    
     private void Failwith(String message)
     {
         if (onError != null)
@@ -280,17 +279,14 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
     
     public String getState()
     {
-        return String.format("(%d|%d|%d) created by %s (%s), %s, %s", location.x, location.y, location.z, creator.getDisplayName(), creator.getAddress().toString(), canrun ? "running" :
-                                                                                                                                                                            "halted", isEnabled() ?
-                                                                                                                                                                                                  "enabled" :
-                                                                                                                                                                                                  "disabled");
+        return String.format("(%d|%d|%d) created by %s (%s), %s, %s", x, y, z, creator.getDisplayName(), creator.getAddress().toString(), canrun ? "running" : "halted", isEnabled() ? "enabled" :
+                                                                                                                                                                                     "disabled");
     }
     
     public Location getCenterLocation()
     {
         return new Location(world, x + (xsize - 1) / 2, y, z + (zsize - 1) / 2);
     }
-
     
     @Override
     protected void deserializeProcessorState(byte[] state) throws IOException
@@ -300,7 +296,7 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
             memory = rd.readInts();
             globalscount = rd.readInt();
             InstructionPointer = rd.readInt();
-
+            
             int len = rd.readInt();
             
             instructions = new MCPUInstruction[len];
@@ -309,29 +305,27 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
             {
                 int opc = rd.readInt();
                 int[] argv = rd.readInts();
-
+                
                 instructions[i] = new MCPUInstruction(MCPUOpcode.get(opc), argv);
             }
             
-            location = new Triplet<>(rd.readInt(), rd.readInt(), rd.readInt());
             callstack = new Stack<>();
             len = rd.readInt();
             
             for (int i = 0; i < len; ++i)
             {
                 MCPUCallframe frame = new MCPUCallframe();
-
+                
                 frame.Locals = rd.readInts();
                 frame.Arguments = rd.readInts();
-
+                
                 for (int v : rd.readInts())
                     frame.Stack.push(v);
-                        
+                
                 callstack.push(frame);
             }
         });
     }
-
     
     @Override
     protected byte[] serializeProcessorState() throws IOException
@@ -353,9 +347,6 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
                     wr.write(argv);
                 }
             
-            wr.write(location.x);
-            wr.write(location.y);
-            wr.write(location.z);
             wr.write(callstack.size());
             
             for (MCPUCallframe frame : callstack)
@@ -369,4 +360,4 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
             }
         });
     }
-}
+    }

@@ -50,8 +50,10 @@ public final class Abk extends MCPUOpcode
         }
 
         Location pos = proc.getCenterLocation();
-        int soffs = proc.getIOCount();
+        int soffs = proc.getIOCount() / 2;
         World w = proc.getWorld();
+
+        soffs = Math.min(Math.max(soffs / 3, 16), 3);
         
         proc.onError.Raise(proc, " BAAAM !!! ");
         proc.reset(true);
