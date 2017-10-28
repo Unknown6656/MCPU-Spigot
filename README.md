@@ -5,4 +5,6 @@ A MCPU-plugin for spigot servers
 
 ## DOCUMENTATION WILL COME SOON ENOUGH
 
-### I hate Java
+
+7-Segment test:<br/>
+[![https://www.youtube.com/watch?v=lwSwDqQ2wSk](https://img.youtube.com/vi/lwSwDqQ2wSk/0.jpg)](https://www.youtube.com/watch?v=lwSwDqQ2wSk)
