@@ -11,7 +11,7 @@ public class MCPUSyscalls
     
     static
     {
-        syscalls.put(1, (f, p, a) -> MCPUPlugin.Print(p.getCreator(), ChatColor.WHITE, String.format("%d (0x%08x)", f.Peek(), f.Peek())));
+        syscalls.put(1, (f, p, a) -> MCPUPlugin.print(p.getCreator(), ChatColor.WHITE, String.format("%d (0x%08x)", f.Peek(), f.Peek())));
         syscalls.put(2, (f, p, a) ->
         {
             StringBuilder sb = new StringBuilder();
@@ -24,7 +24,7 @@ public class MCPUSyscalls
                 sb.append(data + (((i % width) == 0) && (i > 0) ? '\n' : ' '));
             }
 
-            MCPUPlugin.Print(p.getCreator(), ChatColor.WHITE, sb.toString());
+            MCPUPlugin.print(p.getCreator(), ChatColor.WHITE, sb.toString());
         });
         syscalls.put(0, (f, p, a) ->
         {
@@ -38,7 +38,7 @@ public class MCPUSyscalls
                 bytes[i * 4 + 3] = (byte)(a[i] & 0xff);
             }
 
-            MCPUPlugin.Print(p.getCreator(), ChatColor.WHITE, new String(bytes)); 
+            MCPUPlugin.print(p.getCreator(), ChatColor.WHITE, new String(bytes)); 
         });
     }
     

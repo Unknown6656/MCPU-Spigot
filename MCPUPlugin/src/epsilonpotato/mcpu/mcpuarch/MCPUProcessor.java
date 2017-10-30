@@ -217,7 +217,7 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
         if (res.Success)
             load(res.Instructions);
         else
-            MCPUCore.Print(creator, ChatColor.RED, res.ErrorMessage);
+            MCPUCore.print(creator, ChatColor.RED, res.ErrorMessage);
         
         return res.Success;
     }

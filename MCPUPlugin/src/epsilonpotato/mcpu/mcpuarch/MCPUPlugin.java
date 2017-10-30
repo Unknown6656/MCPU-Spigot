@@ -43,7 +43,7 @@ public final class MCPUPlugin extends MCPUCore implements Listener
         }
         catch (Exception e)
         {
-            Error(null, "Unable to register component factories:\n" + e.toString());
+            error(null, "Unable to register component factories:\n" + e.toString());
         }
     }
 }

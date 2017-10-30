@@ -16,7 +16,13 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="/MCPU-Core/target/MCPU-Core-1.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="lib/reflections-0.9.12-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/craftbukkit-1.12.2-R0.1-SNAPSHOT.jar" sourcepath="L:/Projects.Java/Spigot/BuildTools/CraftBukkit/src/main/java"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/MCPU-Core">
+		<accessrules>
+			<accessrule kind="accessible" pattern="*"/>
+		</accessrules>
+	</classpathentry>
+	<classpathentry kind="lib" path="/MCPU-Core/target/MCPU-Core-1.0-SNAPSHOT.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
