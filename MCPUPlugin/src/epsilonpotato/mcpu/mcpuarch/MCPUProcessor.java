@@ -1,4 +1,3 @@
-
 package epsilonpotato.mcpu.mcpuarch;
 
 
@@ -12,7 +11,6 @@ import epsilonpotato.mcpu.core.MCPUCore;
 import epsilonpotato.mcpu.core.SquareEmulatedProcessor;
 import epsilonpotato.mcpu.util.Parallel;
 import epsilonpotato.mcpu.util.Serializer;
-import epsilonpotato.mcpu.util.Triplet;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -21,6 +19,7 @@ import org.bukkit.World;
 
 public final class MCPUProcessor extends SquareEmulatedProcessor
 {
+    private static final long serialVersionUID = 9156823759839023027L;
     private Stack<MCPUCallframe> callstack = new Stack<>();
     private MCPUInstruction[] instructions;
     private int[] memory = new int[1024];
