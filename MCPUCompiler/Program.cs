@@ -10,13 +10,12 @@ using System;
 
 using MCPUCompiler.Properties;
 
+using static System.ConsoleColor;
+using static System.Console;
+
 
 namespace MCPUCompiler
 {
-    using static ConsoleColor;
-    using static Console;
-
-
     public static class Program
     {
         public static readonly string AssemblyName = new FileInfo(typeof(Program).Assembly.Location).Name;
@@ -68,21 +67,29 @@ namespace MCPUCompiler
                 {
                     string code = File.ReadAllText(dic["in"]);
                     CompilerResult result = cmp.Compile(code);
+                    int i = 0;
+
+                    "Loaded the following source code:".Print(Cyan);
+
+                    foreach (string line in code.Split('\n'))
+                        $"{++i,3}: {line}".Print();
 
                     if (result.Success)
                     {
                         "The compilation was successful. Generated instructions:".Print(Green);
 
+                        i = 0;
+
                         foreach (string line in result.Lines)
-                            line.Print();
+                            $"{++i,3}: {line}".Print();
                         // TODO
                     }
                     else
                     {
                         "The compiler could not compile the input file due to the follwing reason(s):".Print(Red);
-                        
-                        result.Error.Print();
-                        // TODO
+
+                        foreach (string line in result.Error.Split('\n'))
+                            line.Print();
                     }
                 }
 
@@ -146,6 +153,14 @@ Options:
     -jar=...    The MCPUPlugin .jar-file
     -out=...    The output .asm file
 ".Print();
+
+        private static void Print(this IEnumerable<string> s, bool linenumbers = false, ConsoleColor c = White)
+        {
+            ForegroundColor = DarkGray;
+            Write($"[{DateTime.Now:HH:mm:ss.ffffff}] ");
+            ForegroundColor = c;
+            WriteLine(s);
+        }
 
         private static void Print(this string s, ConsoleColor c = White)
         {
