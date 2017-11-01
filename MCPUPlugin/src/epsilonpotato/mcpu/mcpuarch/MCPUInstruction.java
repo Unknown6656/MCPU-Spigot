@@ -1,8 +1,10 @@
 package epsilonpotato.mcpu.mcpuarch;
 
+import java.io.Serializable;
 
-public final class MCPUInstruction
+public final class MCPUInstruction implements Serializable
 {
+    private static final long serialVersionUID = 7079972155059307515L;
     private int[] arguments;
     private MCPUOpcode opcode;
     

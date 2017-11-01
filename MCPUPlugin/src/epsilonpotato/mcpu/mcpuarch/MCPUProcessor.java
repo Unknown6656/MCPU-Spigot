@@ -21,7 +21,7 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
 {
     private static final long serialVersionUID = 9156823759839023027L;
     private Stack<MCPUCallframe> callstack = new Stack<>();
-    private MCPUInstruction[] instructions;
+    private transient MCPUInstruction[] instructions;
     private int[] memory = new int[1024];
     public int globalscount;
     
@@ -359,4 +359,4 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
             }
         });
     }
-    }
+}

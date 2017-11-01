@@ -1,10 +1,12 @@
 package epsilonpotato.mcpu.mcpuarch;
 
+import java.io.Serializable;
 import java.util.Stack;
 
 
-public final class MCPUCallframe
+public final class MCPUCallframe implements Serializable
 {
+    private static final long serialVersionUID = 8103464033996483401L;
     protected final Stack<Integer> Stack = new Stack<>();
     public int[] Arguments = new int[0];
     public int[] Locals = new int[0];
