@@ -56,7 +56,7 @@ let AssignPower      = term  @"\*\*="
 let AssignDivide     = term  "/="
 let AssignModulo     = term  "%="
 let AssignOr         = term  @"\|\|?="
-let AssignXor        = term  @"\^="
+let AssignXor        = term  @"^="
 let AssignAnd        = term  "&&?="
 let rotateRight      = term  ">>>"
 let shiftRight       = term  ">>"
@@ -83,7 +83,7 @@ let questionmark     = term  "?"
 let colon            = term  ":"
 let asterisk         = term  @"\*"
 let doubleAsterisk   = term  @"\*\*"
-let hat              = term  @"\^"
+let hat              = term  @"^"
 let ioLiteral        = termf @"(in|out)"                                (fun s -> BoolLiteral(s.ToLower() <> "in"))
 let intLiteral       = termf @"\d+"                                     (fun s -> IntLiteral(int32 s))
 let hexLiteral       = termf @"(0(x|X)[0-9a-fA-F]+|[0-9a-fA-F]+(h|H))"  (fun s -> IntLiteral(System.Int32.Parse(s, NumberStyles.HexNumber)))
@@ -106,7 +106,7 @@ let forwardSlash     = term  "/"
 let singleEquals     = term  "="
 let pipe             = term  @"\|\|?"
 let doubleEquals     = term  "=="
-let bangEquals       = term  "!="
+let notEquals        = term  "!="
 let openAngleEquals  = term  "<="
 let openAngle        = term  "<"
 let closeAngleEquals = term  ">="
@@ -268,24 +268,24 @@ reduce3 expression identifier binaryAssignOperator expression (fun i o e -> Scal
 reduce6 expression arridentifier openSquare expression closeSquare binaryAssignOperator expression (fun i _ n _ o e -> ArrayAssignmentOperatorExpression(i, n, o, e))
 reduce3 expression expression pipe expression (fun x _ y -> BinaryExpression(x, Or, y))
 reduce3 expression expression ampersand expression (fun x _ y -> BinaryExpression(x, And, y))
+reduce3 expression expression doubleEquals expression (fun x _ y -> BinaryExpression(x, Equal, y))
+reduce3 expression expression notEquals expression (fun x _ y -> BinaryExpression(x, NotEqual, y))
+reduce3 expression expression openAngle expression (fun x _ y -> BinaryExpression(x, Less, y))
+reduce3 expression expression openAngleEquals expression (fun x _ y -> BinaryExpression(x, LessEqual, y))
+reduce3 expression expression closeAngle expression (fun x _ y -> BinaryExpression(x, Greater, y))
+reduce3 expression expression closeAngleEquals expression (fun x _ y -> BinaryExpression(x, GreaterEqual, y))
 reduce3 expression expression rotateLeft expression (fun x _ y -> BinaryExpression(x, Rol, y))
 reduce3 expression expression shiftLeft expression (fun x _ y -> BinaryExpression(x, Shl, y))
 reduce3 expression expression rotateRight expression (fun x _ y -> BinaryExpression(x, Ror, y))
 reduce3 expression expression shiftRight expression (fun x _ y -> BinaryExpression(x, Shr, y))
+reduce3 expression expression asterisk expression (fun x _ y -> BinaryExpression(x, Multiply, y))
 reduce3 expression expression plus expression (fun x _ y -> BinaryExpression(x, Add, y))
 reduce3 expression expression minus expression (fun x _ y -> BinaryExpression(x, Subtract, y))
-reduce3 expression expression asterisk expression (fun x _ y -> BinaryExpression(x, Multiply, y))
+reduce5 expression expression questionmark expression colon expression (fun c _ x _ y -> TernaryExpression(c, x, y))
 reduce3 expression expression doubleAsterisk expression (fun x _ y -> BinaryExpression(x, Power, y))
 reduce3 expression expression hat expression (fun x _ y -> BinaryExpression(x, Xor, y))
 reduce3 expression expression percent expression (fun x _ y -> BinaryExpression(x, Modulus, y))
 reduce3 expression expression forwardSlash expression (fun x _ y -> BinaryExpression(x, Divide, y))
-reduce3 expression expression doubleEquals expression (fun x _ y -> BinaryExpression(x, Equal, y))
-reduce3 expression expression bangEquals expression (fun x _ y -> BinaryExpression(x, NotEqual, y))
-reduce3 expression expression openAngleEquals expression (fun x _ y -> BinaryExpression(x, LessEqual, y))
-reduce3 expression expression openAngle expression (fun x _ y -> BinaryExpression(x, Less, y))
-reduce3 expression expression closeAngleEquals expression (fun x _ y -> BinaryExpression(x, GreaterEqual, y))
-reduce3 expression expression closeAngle expression (fun x _ y -> BinaryExpression(x, Greater, y))
-reduce5 expression expression questionmark expression colon expression (fun c _ x _ y -> TernaryExpression(c, x, y))
 
 let unaryExpressionProduction = expression.AddProduction(unaryOperator, expression)
 unaryExpressionProduction.SetReduceFunction (fun a b -> UnaryExpression(a, b))
@@ -304,8 +304,8 @@ reduce1 expression ioLiteral LiteralExpression
 
 reduce1 unaryOperator exclamation (fun _ -> LogicalNegate)
 reduce1 unaryOperator minus (fun _ -> Negate)
-//reduce1 unaryOperator doubleMinus (fun _ -> Decr)
-//reduce1 unaryOperator doublePlus (fun _ -> Incr)
+reduce1 unaryOperator doubleMinus (fun _ -> Decr)
+reduce1 unaryOperator doublePlus (fun _ -> Incr)
 reduce1 unaryOperator plus (fun _ -> Identity)
 reduce1 unaryOperator tilde (fun _ -> Not)
 reduce1 unaryOperator CastInt (fun _ -> IntCast)
