@@ -333,17 +333,18 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
     let proclocdecl decl = procvardecl &locindex LocalScope decl
     let procparam decl = procvardecl &argindex ArgumentScope decl
     let rec collectlocdecl stm =
+        let constrvar expr =
+            let var = {
+                        ASMVariable.Name = sprintf "________tmp_0x%016x" locindex
+                    }
+            arrassgnloc.Add(expr, locindex)
+            locindex <- locindex + 1s
+            var
+        (*
         let rec fromstat stm =
-            let constrvar expr =
-                let var = {
-                            ASMVariable.Name = sprintf "________tmp_0x%016x" locindex
-                        }
-                arrassgnloc.Add(expr, locindex)
-                locindex <- locindex + 1s
-                var
             match stm with
-            | ExpressionStatement (Expression e) -> [fromexpr e]
             | ExpressionStatement (Nop) -> []
+            | ExpressionStatement (Expression e) -> [fromexpr e]
             | CompoundStatement(loc, stms) -> 
                 [
                     List.map proclocdecl loc
@@ -375,3 +376,5 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
                        | FunctionCallExpression(_, a) -> List.collect fromexpr a
                        | _ -> []
         fromstat stm
+        *)
+        0

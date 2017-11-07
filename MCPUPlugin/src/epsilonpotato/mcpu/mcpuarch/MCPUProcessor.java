@@ -1,7 +1,8 @@
 package epsilonpotato.mcpu.mcpuarch;
 
 
-import java.io.IOException;
+import java.util.List;
+import java.util.Arrays;
 import java.util.Stack;
 
 import org.bukkit.entity.Player;
@@ -10,7 +11,7 @@ import epsilonpotato.mcpu.core.EmulatedProcessorEvent;
 import epsilonpotato.mcpu.core.MCPUCore;
 import epsilonpotato.mcpu.core.SquareEmulatedProcessor;
 import epsilonpotato.mcpu.util.Parallel;
-import epsilonpotato.mcpu.util.Serializer;
+import epsilonpotato.mcpu.util.YamlConfiguration;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -287,76 +288,127 @@ public final class MCPUProcessor extends SquareEmulatedProcessor
         return new Location(world, x + (xsize - 1) / 2, y, z + (zsize - 1) / 2);
     }
     
+
     @Override
-    protected void deserializeProcessorState(byte[] state) throws IOException
+    protected final void serializeProcessorState(YamlConfiguration conf)
     {
-        Serializer.getBinaryReader(state, rd ->
+        YamlConfiguration confMemory = conf.getOrCreateSection("memory");
+        YamlConfiguration confCallstack = conf.getOrCreateSection("callstack");
+        YamlConfiguration confInstructions = conf.getOrCreateSection("instructions");
+        
+        confMemory.set("count", memory.length);
+        confMemory.set("data", Arrays.asList(memory));
+        
+        conf.set("globals", globalscount);
+        
+        int num = 0;
+        
+        if (instructions != null)
+            for (MCPUInstruction ins : instructions)
+            {
+                confInstructions.set("ins_" + num + ".opc", ins.getOPCode().getNumber());
+                confInstructions.set("ins_" + num + ".args", Arrays.asList(ins.getArguments()));
+                
+                ++num;
+            }
+
+        confInstructions.set("__ptr", InstructionPointer);
+        confInstructions.set("count", num);
+        
+        confCallstack.set("size", callstack.size());
+
+        num = 0;
+        
+        for (MCPUCallframe frame : callstack)
         {
-            memory = rd.readInts();
-            globalscount = rd.readInt();
-            InstructionPointer = rd.readInt();
+            YamlConfiguration confCallframe = confCallstack.getOrCreateSection("frame_" + num);
+            YamlConfiguration confStack = confCallframe.getOrCreateSection("stack");
             
-            int len = rd.readInt();
+            confCallframe.set("locals", Arrays.asList(frame.Locals));
+            confCallframe.set("args", Arrays.asList(frame.Arguments));
+            confStack.set("size", frame.StackSize());
+
+            int stacknum = 0;
             
-            instructions = new MCPUInstruction[len];
-            
-            for (int i = 0; i < len; ++i)
+            for (int v : frame.Stack)
             {
-                int opc = rd.readInt();
-                int[] argv = rd.readInts();
-                
-                instructions[i] = new MCPUInstruction(MCPUOpcode.get(opc), argv);
+                confStack.set("value_" + stacknum, v);
+             
+                ++stacknum;
             }
-            
-            callstack = new Stack<>();
-            len = rd.readInt();
-            
-            for (int i = 0; i < len; ++i)
-            {
-                MCPUCallframe frame = new MCPUCallframe();
-                
-                frame.Locals = rd.readInts();
-                frame.Arguments = rd.readInts();
-                
-                for (int v : rd.readInts())
-                    frame.Stack.push(v);
-                
-                callstack.push(frame);
-            }
-        });
+
+            ++num;
+        }
     }
     
     @Override
-    protected byte[] serializeProcessorState() throws IOException
+    protected final void deserializeProcessorState(YamlConfiguration conf)
     {
-        return Serializer.fromBinaryWriter(wr ->
+        YamlConfiguration confMemory = conf.getOrCreateSection("memory");
+        YamlConfiguration confCallstack = conf.getOrCreateSection("callstack");
+        YamlConfiguration confInstructions = conf.getOrCreateSection("instructions");
+
+        memory = new int[confMemory.getInt("count", 0)];
+
+        int i = 0;
+        
+        for (int val : confMemory.getList("data", Integer.class))
+            if (i < memory.length)
+                memory[i++] = val;
+            else
+                break;
+        
+        globalscount = conf.getInt("globals", 0);
+        InstructionPointer = confInstructions.getInt("__ptr", 0);
+        
+        int num = confInstructions.getInt("count", 0);
+        
+        instructions = new MCPUInstruction[num];
+        
+        for (i = 0; i < num; ++i)
         {
-            wr.write(memory);
-            wr.write(globalscount);
-            wr.write(InstructionPointer);
-            wr.write(instructions == null ? 0 : instructions.length);
+            int opc = confInstructions.getInt("ins_" + num + ".opc", 0);
+            List<Integer> arglist = confInstructions.getList("ins_" + num + ".args", Integer.class); 
+            int[] args = new int[arglist.size()];
+            int cnt = 0;
             
-            if (instructions != null)
-                for (MCPUInstruction ins : instructions)
-                {
-                    int opc = ins.getOPCode().getNumber();
-                    int[] argv = ins.getArguments();
-                    
-                    wr.write(opc);
-                    wr.write(argv);
-                }
+            for (int val : arglist)
+                args[cnt++] = val;
             
-            wr.write(callstack.size());
+            instructions[i] = new MCPUInstruction(MCPUOpcode.get(opc), args);
+        }
+
+        callstack.clear();
+        
+        num = confCallstack.getInt("size", 0);
+        
+        for (i = 0; i < num; ++i)
+        {
+            YamlConfiguration confCallframe = confCallstack.getOrCreateSection("frame_" + i);
+            YamlConfiguration confStack = confCallframe.getOrCreateSection("stack");
             
-            for (MCPUCallframe frame : callstack)
-            {
-                wr.write(frame.Locals);
-                wr.write(frame.Arguments);
-                wr.write(frame.StackSize());
-                
-                for (int v : frame.Stack)
-                    wr.write(v);
-            }
-        });
+            List<Integer> locals = confCallframe.getList("locals", Integer.class);
+            List<Integer> arguments = confCallframe.getList("args", Integer.class);
+            int[] stack = new int[confStack.getInt("size", 0)];
+            int[] args = new int[arguments.size()];
+            int[] loc = new int[locals.size()];
+            int stacknum = 0;
+            int index;
+            
+            for (index = 0; index < stacknum; ++index)
+                stack[index] = confStack.getInt("value_" + stacknum, 0);
+
+            index = 0;
+            
+            for (int v : locals)
+                loc[index++] = v;
+
+            index = 0;
+            
+            for (int v : arguments)
+                args[index++] = v;
+            
+            callstack.push(new MCPUCallframe(args, loc, stack));
+        }
     }
 }
