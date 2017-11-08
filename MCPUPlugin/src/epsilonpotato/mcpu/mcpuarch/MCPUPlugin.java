@@ -15,11 +15,13 @@ public final class MCPUPlugin extends MCPUCore implements Listener
 {
     private static final HashMap<String, Tuple<String, String>> usageoptions = new HashMap<>();
     
+    static
+    {
+       //TODO : possibly add more options to `usageoptions`
+    }
     
     public MCPUPlugin()
     {
-        // TODO : possibly add more options
-        
         super(usageoptions);
         
         System.out.println("Loaded " + MCPUOpcode.OpcodesS.size() + " MCPU Instructions:\n\t " + String.join(", ", MCPUOpcode.OpcodesS.keySet()));

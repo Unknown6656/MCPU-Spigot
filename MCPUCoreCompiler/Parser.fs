@@ -10,28 +10,26 @@ type FunctionTableEntry =
         ParameterTypes : VariableType list;
     }
    
-   
 let EntryPointName = "main"
 let (!/) t = { Type = t; IsArray = false }
 let (|Scalar|_|) (t : VariableType) = if t.IsArray then Some t.Type else None
 let (|Sbool|_|) (t : VariableType) = if t = !/Bool then Some () else None
 let (|Sint|_|) (t : VariableType) = if t = !/Int then Some () else None
 let DeclarationType : VariableDeclaration -> VariableType = fst >> (!/)
-let BuildInFunctions : (string * FunctionTableEntry) list =
+let BuildInFunctions : (BuildInFunctions * FunctionTableEntry) list =
     let (/-->) p r = { ReturnType = r; ParameterTypes = [ for x in p -> { Type = x; IsArray = false } ] }
     [
-        "printi", [Int] /--> Void
-        "abs", [Int] /--> Int
-        "sign", [Int] /--> Int
-        "pow", [Int; Int] /--> Int
-        "log", [Int] /--> Int
-        "loge", [Int] /--> Int
-        "log2", [Int] /--> Int
-        "log10", [Int] /--> Int
-        "io", [Int; Bool] /--> Void
-        "exp", [Int] /--> Int
+        Func__printi, [Int] /--> Void
+        Func__abs, [Int] /--> Int
+        Func__sign, [Int] /--> Int
+        Func__pow, [Int; Int] /--> Int
+        // Func__log, [Int] /--> Int
+        // Func__loge, [Int] /--> Int
+        Func__log2, [Int] /--> Int
+        Func__log10, [Int] /--> Int
+        Func__iodir, [Int; Bool] /--> Void
+        // Func__exp, [Int] /--> Int
     ]
-
 
 type internal SymbolScope(parent : SymbolScope option) =
     let mutable (* so what?! *) list = List.empty<VariableDeclaration>
@@ -63,7 +61,9 @@ type internal SymbolScopeStack() =
                       |> Some
                       |> SymbolScope
                       |> stack.Push
+   
     member x.Pop() = stack.Pop() |> ignore
+    
     member x.AddDeclaration declaration = stack.Peek().AddDeclaration declaration
 
 type FunctionTable(program) as self =
@@ -78,9 +78,8 @@ type FunctionTable(program) as self =
             self.Add(i, { ReturnType = t; ParameterTypes = List.map DeclarationType p; })
 
     do
-        List.iter (fun f -> self.Add(fst f, snd f)) BuildInFunctions
-        
-        program |> List.iter scanDeclaration
+        List.iter (fun f -> self.Add((fst f).ToString(), snd f)) BuildInFunctions
+        List.iter scanDeclaration program
 
 type SymbolTable(program) as self =
     inherit Dictionary<IdentifierRef, VariableDeclaration>(HashIdentity.Reference)

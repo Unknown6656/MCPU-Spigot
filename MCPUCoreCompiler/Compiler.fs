@@ -105,10 +105,12 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
     let lookupScope i =
         let decl = sares.SymbolTable.[i]
         mapping.[decl]
+
     let mklabel () =
         let res = lbindex
         lbindex <- lbindex + 1UL
         res
+
     let rec procbinexpr = (function
                           | (l, SyntaxTree.Or, r) ->
                                 let leftfalselabel = mklabel()
@@ -141,6 +143,7 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
                                     [procbinop op]
                                 ]
                             ) >> List.concat
+
     and procbinop x = match x with
                       | SyntaxTree.Add -> Add
                       | Equal -> Eq
@@ -160,6 +163,7 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
                       | SyntaxTree.Ror -> Ror
                       | SyntaxTree.Rol -> Rol
                       | _ -> raise <| GeneratorError x
+
     and procunop x = match x with
                      | LogicalNegate ->
                         [
@@ -186,16 +190,19 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
                             Neq
                         ]
                      | _ -> raise <| GeneratorError x
+
     and procidentifierload i =
         match lookupScope i with
         | GlobalScope v -> Ldglob v
         | ArgumentScope i -> Ldarg i
         | LocalScope i -> Ldloc i
+
     and procidentifierstore i =
         match lookupScope i with
         | GlobalScope v -> Stglob v
         | ArgumentScope i -> Starg i
         | LocalScope i -> Stloc i
+
     and procexpr expr =
         match expr with
         | ScalarAssignmentExpression(i, e) ->
@@ -266,6 +273,7 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
                 [Call(i, p.Length)]
             ]
         |> List.concat
+
     and procstatm stm =
         match stm with
         | ExpressionStatement e ->
@@ -325,13 +333,17 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
         | AbkStatement -> [[Abk]]
         | HaltStatement -> [[Halt]]
         |> List.concat
+
     let procvardecl (mi : byref<_>) f d =
         let var = CreateASMVariable d
         mapping.Add(d, f mi)
         mi <- mi + 1s
         var
+
     let proclocdecl decl = procvardecl &locindex LocalScope decl
+
     let procparam decl = procvardecl &argindex ArgumentScope decl
+    
     let rec collectlocdecl stm =
         let constrvar expr =
             let var = {
@@ -340,11 +352,22 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
             arrassgnloc.Add(expr, locindex)
             locindex <- locindex + 1s
             var
-        (*
-        let rec fromstat stm =
+
+        let rec fromexpr = function
+                       | ScalarAssignmentExpression(_, e) -> fromexpr e
+                       | ArrayAssignmentOperatorExpression(_, n, _, e) as ae -> (fromexpr n)@[constrvar ae]@(fromexpr e)
+                       | ArrayAssignmentExpression(_, n, e) as ae -> (fromexpr n)@[constrvar ae]@(fromexpr e)
+                       | BinaryExpression(l, _, r) -> (fromexpr l)@(fromexpr r)
+                       | TernaryExpression(c, t, f) -> List.collect fromexpr [c;t;f]
+                       | ArrayIdentifierExpression(_, e)
+                       | UnaryExpression(_, e) -> fromexpr e
+                       | FunctionCallExpression(_, a) -> List.collect fromexpr a
+                       | _ -> []
+
+        let fromstat stm =
             match stm with
-            | ExpressionStatement (Nop) -> []
             | ExpressionStatement (Expression e) -> [fromexpr e]
+            | ExpressionStatement (Nop) -> []
             | CompoundStatement(loc, stms) -> 
                 [
                     List.map proclocdecl loc
@@ -353,28 +376,64 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
             | IfStatement(c, s1, Some s2) ->
                 [
                     fromexpr c
-                    List.collect collectlocdecl s1
-                    List.collect collectlocdecl s2
+                    collectlocdecl s1
+                    collectlocdecl s2
                 ]
             | WhileStatement(c, s)
             | IfStatement(c, s, None) ->
                 [
                     fromexpr c
-                    List.collect collectlocdecl s
+                    collectlocdecl s
                 ]
             | ReturnStatement(Some r) -> [fromexpr r]
             | _ -> []
-           <| List.concat
-        and fromexpr = function
-                       | ScalarAssignmentExpression(_, e) -> [fromexpr e]
-                       | ArrayAssignmentOperatorExpression(_, n, _, e) as ae -> (fromexpr n)@[constrvar ae]@(fromexpr e)
-                       | ArrayAssignmentExpression(_, n, e) as ae -> (fromexpr n)@[constrvar ae]@(fromexpr e)
-                       | BinaryExpression(l, _, r) -> (fromexpr l)@(fromexpr r)
-                       | TernaryExpression(c, t, f) -> List.collect fromexpr [c;t;f]
-                       | ArrayIdentifierExpression(_, e)
-                       | UnaryExpression(_, e) -> [fromexpr e]
-                       | FunctionCallExpression(_, a) -> List.collect fromexpr a
-                       | _ -> []
+            |> List.concat
         fromstat stm
-        *)
-        0
+
+    member x.BuildMethod (rettype, name, para, (locdec, stms)) =
+        {
+            ASMMethod.Name = name
+            ReturnType = rettype
+            Parameters = List.map procparam para
+            Locals = List.concat [
+                                    List.map proclocdecl locdec
+                                    List.collect collectlocdecl stms
+                                 ]
+            Body = List.collect procstatm stms
+        }
+
+type ASMBuilder (sares : SemanticAnalysisResult) =
+    let varmap = VariableMappingDictionary HashIdentity.Reference
+
+    let procstatvardecl d =
+        let v = CreateASMVariable d
+        varmap.Add(d, GlobalScope v)
+        v
+
+    let procfuncdecl =
+        let asmbuilder = ASMMethodBuilder (sares, varmap)
+        asmbuilder.BuildMethod
+
+    member x.BuildClass (prog : SyntaxTree.Program) =
+        let builtin = [
+                          Func__abs, Int, [], [], []
+                      ]
+                      |> List.map (fun (f, t, p, l, b) -> {
+                                                              ASMMethod.Name = f.ToString()
+                                                              ReturnType = t
+                                                              Parameters = p
+                                                              Locals = l
+                                                              Body = b
+                                                          })
+        {
+            Globals = prog
+                      |> List.choose (fun x -> match x with
+                                               | GlobalVariableDeclaration x -> Some x
+                                               | _ -> None) 
+                      |> List.map procstatvardecl
+            Methods = builtin @ (prog
+                                 |> List.choose (fun x -> match x with
+                                                                  | FunctionDeclaration a -> Some a
+                                                                  | _ -> None)
+                                 |> List.map procfuncdecl)
+        }

@@ -151,6 +151,26 @@ type Declaration =
     | FunctionDeclaration of FunctionDeclaration
 type Program = Declaration list
 
+type BuildInFunctions =
+    | Func__printi
+    | Func__abs
+    | Func__sign
+    | Func__pow
+    | Func__log2
+    | Func__log10
+    | Func__iodir
+    | Func__exp
+    override x.ToString() = function
+                            | Func__printi -> "printi"
+                            | Func__abs -> "abs"
+                            | Func__sign -> "sign"
+                            | Func__pow -> "pow"
+                            | Func__log2 -> "log2"
+                            | Func__log10 -> "log10"
+                            | Func__iodir -> "iodir"
+                            | Func__exp -> "exp"
+                           <| x
+
 type VariableType =
     {
         Type : TypeSpec

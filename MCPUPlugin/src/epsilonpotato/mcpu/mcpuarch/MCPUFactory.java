@@ -4,6 +4,7 @@ import org.bukkit.entity.Player;
 
 import epsilonpotato.mcpu.core.BlockPlacingContext;
 import epsilonpotato.mcpu.core.MCPUCore;
+import epsilonpotato.mcpu.core.SquareEmulatedProcessor;
 import epsilonpotato.mcpu.core.SquareEmulatedProcessorFactory;
 
 public final class MCPUFactory extends SquareEmulatedProcessorFactory<MCPUProcessor>
@@ -25,5 +26,12 @@ public final class MCPUFactory extends SquareEmulatedProcessorFactory<MCPUProces
             
             return null;
         }
+    }
+
+    
+    @Override
+    protected Class<SquareEmulatedProcessor> getCircuitType()
+    {
+        return SquareEmulatedProcessor.class;
     }
 }

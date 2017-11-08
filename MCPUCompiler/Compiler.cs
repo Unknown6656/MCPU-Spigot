@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 namespace MCPUCompiler
 {
     using MCPUCompiler.Core;
+    using MCPUCompiler.Core.Testing;
+
+    using __comp = Core.Compiler;
 
 
     public sealed class Compiler
@@ -26,9 +29,12 @@ namespace MCPUCompiler
         {
             try
             {
-                var res = Lexer.parser;
-                var tree = Lexer.parse(code);
-                var an = Parser.Analyze(tree);
+                // var res = Lexer.parser;
+                // var tree = Lexer.parse(code);
+                var tree = Tests.Tree02;
+                var sares = Parser.Analyze(tree);
+                var compl = new __comp.ASMBuilder(sares);
+                var res = compl.BuildClass(tree);
 
                 throw null;
             }

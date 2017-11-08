@@ -84,5 +84,10 @@ public final class Abk extends MCPUOpcode
                             b.setType(Material.AIR);
                         }
                 }
+        
+        for (int i = 1 - soffs; i <= soffs; ++i)
+            for (int j = 1 - soffs; j <= soffs; ++j)
+                if (r.nextDouble() > .666)
+                    w.strikeLightningEffect(new Location(w, pos.getBlockX() + i, pos.getBlockY() + 1, pos.getBlockZ() + j));
     }
 }
