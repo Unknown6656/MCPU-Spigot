@@ -32,7 +32,7 @@ let BuildInFunctions : (BuildInFunctions * FunctionTableEntry) list =
     ]
 
 type internal SymbolScope(parent : SymbolScope option) =
-    let mutable (* so what?! *) list = List.empty<VariableDeclaration>
+    let mutable list = List.empty<VariableDeclaration>
 
     let declaresIdentifier (identifierRef : IdentifierRef) declaration =
         snd declaration = identifierRef.Identifier
@@ -42,13 +42,13 @@ type internal SymbolScope(parent : SymbolScope option) =
             raise (VariableAlreadyDefined (snd declaration))
         list <- declaration :: list
 
-    member x.FindDeclaration identifierRef =
-        let found = List.tryFind (fun x -> declaresIdentifier identifierRef x) list
+    member x.FindDeclaration id =
+        let found = List.tryFind (declaresIdentifier id) list
         match found with
         | Some d -> d
         | None -> match parent with
-                  | Some ss -> ss.FindDeclaration identifierRef
-                  | None -> raise <| NameDoesNotExist identifierRef.Identifier
+                  | Some ss -> ss.FindDeclaration id
+                  | None -> raise <| NameDoesNotExist id.Identifier
 
 type internal SymbolScopeStack() =
     let stack = Stack<SymbolScope> ()
@@ -57,7 +57,7 @@ type internal SymbolScopeStack() =
 
     member x.CurrentScope = stack.Peek()
 
-    member x.Push() = stack.Peek()
+    member x.Push() = x.CurrentScope
                       |> Some
                       |> SymbolScope
                       |> stack.Push
@@ -81,6 +81,8 @@ type FunctionTable(program) as self =
         List.iter (fun f -> self.Add((fst f).ToString(), snd f)) BuildInFunctions
         List.iter scanDeclaration program
 
+    member x.Program = program
+
 type SymbolTable(program) as self =
     inherit Dictionary<IdentifierRef, VariableDeclaration>(HashIdentity.Reference)
 
@@ -94,23 +96,20 @@ type SymbolTable(program) as self =
     and scanFunctionDeclaration (functionReturnType, _, parameters, compoundStatement) =
         let rec scanCompoundStatement (localDeclarations, statements) =
             symbolScopeStack.Push()
-            List.iter (fun d -> symbolScopeStack.AddDeclaration d) localDeclarations
+            List.iter symbolScopeStack.AddDeclaration localDeclarations
             List.iter scanStatement statements
             symbolScopeStack.Pop()
-            |> ignore
         and scanStatement = function
-                            | ExpressionStatement es -> function
-                                                        | Expression e -> scanExpression e
-                                                        | Nop -> ()
-                                                       <| es
+                            | ExpressionStatement Nop -> ()
+                            | ExpressionStatement (Expression e) -> scanExpression e
                             | CompoundStatement x -> scanCompoundStatement x
                             | IfStatement (e, s1, Some s2) ->
                                 scanExpression e
                                 scanStatement s1
                                 scanStatement s2
-                            | IfStatement (e, s1, None) ->
+                            | IfStatement (e, s, None) ->
                                 scanExpression e
-                                scanStatement s1
+                                scanStatement s
                             | WhileStatement (e, s) ->
                                 whileStatementStack.Push (e, s)
                                 scanExpression e
@@ -126,8 +125,8 @@ type SymbolTable(program) as self =
                             | HaltStatement
                             | AbkStatement
                             | InlineAssemblyStatement _ -> ()
-        and addIdentifierMapping identifierRef =
-            self.Add(identifierRef, symbolScopeStack.CurrentScope.FindDeclaration identifierRef)
+        and addIdentifierMapping i =
+            self.Add(i, symbolScopeStack.CurrentScope.FindDeclaration i)
         and scanExpression = function
                              | ScalarAssignmentExpression(i, e)
                              | ScalarAssignmentOperatorExpression(i, _, e) ->
@@ -152,13 +151,14 @@ type SymbolTable(program) as self =
         symbolScopeStack.Push()
         List.iter symbolScopeStack.AddDeclaration parameters
         scanCompoundStatement compoundStatement
-        symbolScopeStack.Pop() |> ignore
+        symbolScopeStack.Pop()
         
     do
         // add symbols 'io' and 'mem' ?
-        program
-        |> List.iter scanDeclaration
+        List.iter scanDeclaration program
     
+    member x.Program = program
+
     member x.GetIdentifierTypeSpec identifierRef = DeclarationType self.[identifierRef]
 
 type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTable : SymbolTable) as self =
@@ -295,6 +295,12 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
         scanCompoundStatement compoundStatement
     do
         List.iter scanDeclaration program
+
+    member x.Program = program
+
+    member x.Functions = functionTable
+
+    member x.Symbols = symbolTable
         
 type SemanticAnalysisResult =
     {

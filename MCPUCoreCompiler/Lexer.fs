@@ -70,6 +70,7 @@ let breakKeyword     = term  "break"
 let haltKeyword      = term  "halt"
 let abkKeyword       = term  "abk"
 let forKeyword       = term  "for"
+let untilKeyword     = term  "until"
 let sizeKeyword      = term  "length"
 let asmKeyword       = term  "__asm"
 let voidKeyword      = term  "void"
@@ -129,14 +130,15 @@ let assoc d x =
     |> ignore
     
 assoc Left [ elseKeyword ]
+assoc Left [ singleEquals ]
 assoc Left [ colon ] // I'm not sure about this line
 assoc Right [ questionmark ] // I'm not sure about this line
 assoc Right [ AssignAdd; AssignAnd; AssignDivide; AssignModulo; AssignMultiply; AssignOr; AssignPower; AssignRotateLeft;
               AssignRotateRight; AssignShiftLeft; AssignShiftRight; AssignSubtract; AssignXor; ]
-assoc Left [ singleEquals ]
 assoc Left [ hat ]
 assoc Left [ pipe ]
 assoc Left [ ampersand ]
+assoc Left [ doubleEquals; notEquals ]
 assoc Left [ openAngle; openAngleEquals; closeAngle; closeAngleEquals ]
 assoc Left [ rotateLeft; shiftLeft; rotateRight; shiftRight ]
 assoc Left [ tilde; minus; plus; exclamation ]
@@ -144,6 +146,7 @@ assoc Left [ asterisk; forwardSlash; percent ]
 assoc Right [ doubleAsterisk ]
 assoc Right [ CastBool; CastInt ]
 assoc Right [ doubleMinus; doublePlus; ]
+
 
 let unaryExpressionPrecedenceGroup  = conf.RightAssociative()
 
@@ -207,18 +210,23 @@ reduce1 expressionStatement semicolon (fun _ -> Nop)
 reduce4 compoundStatement openCurly optionalLocalDeclarations optionalStatementList closeCurly (fun _ l s _ -> (l, s))
 reduce8 compoundStatement forKeyword openParen expressionStatement expression semicolon expression closeParen statement (fun _ _ f t _ o _ s ->
     (
-        [], [
+        [],
+        [
             ExpressionStatement f
             WhileStatement (
-                                t,
-                                CompoundStatement ([], [
-                                                            s
-                                                            (Expression >> ExpressionStatement) o
-                                                       ])
-                           )
+                t,
+                CompoundStatement (
+                    [],
+                    [
+                        s
+                        (Expression >> ExpressionStatement) o
+                    ]
+                )
+            )
         ]
-    ))
-    
+    )
+)
+reduce5 whileStatement untilKeyword openParen expression closeParen statement (fun _ _ e _ s -> (UnaryExpression(LogicalNegate, e), s))
 reduce5 whileStatement whileKeyword openParen expression closeParen statement (fun _ _ e _ s -> (e, s))
 reduce6 whileStatement forKeyword openParen semicolon semicolon closeParen statement (fun _ _ _ _ _ s -> (LiteralExpression(BoolLiteral true), s))
 
@@ -262,10 +270,10 @@ reduce1 binaryAssignOperator AssignShiftRight (fun _ -> Shr)
 reduce1 binaryAssignOperator AssignSubtract (fun _ -> Subtract)
 reduce1 binaryAssignOperator AssignXor (fun _ -> Xor)
 
-reduce3 expression identifier singleEquals expression (fun i _ e -> ScalarAssignmentExpression({ Identifier = i }, e))
 reduce6 expression arridentifier openSquare expression closeSquare singleEquals expression (fun i _ n _ _ e -> ArrayAssignmentExpression(i, n, e))
-reduce3 expression identifier binaryAssignOperator expression (fun i o e -> ScalarAssignmentOperatorExpression({ Identifier = i}, o, e))
-reduce6 expression arridentifier openSquare expression closeSquare binaryAssignOperator expression (fun i _ n _ o e -> ArrayAssignmentOperatorExpression(i, n, o, e))
+reduce3 expression identifier singleEquals expression (fun i _ e -> ScalarAssignmentExpression({ Identifier = i }, e))
+//reduce6 expression arridentifier openSquare expression closeSquare binaryAssignOperator expression (fun i _ n _ o e -> ArrayAssignmentOperatorExpression(i, n, o, e))
+//reduce3 expression identifier binaryAssignOperator expression (fun i o e -> ScalarAssignmentOperatorExpression({ Identifier = i}, o, e))
 reduce3 expression expression pipe expression (fun x _ y -> BinaryExpression(x, Or, y))
 reduce3 expression expression ampersand expression (fun x _ y -> BinaryExpression(x, And, y))
 reduce3 expression expression doubleEquals expression (fun x _ y -> BinaryExpression(x, Equal, y))
@@ -319,12 +327,15 @@ reducelist arguments comma expression
 conf.LexerSettings.Ignore <- [| @"\s+"; @"/\*(.|[\r\n])*?\*/"; @"//[^\n]*\n" |]
 
 
-let parser = conf.CreateParser()
+let Parser = conf.CreateParser()
 
-let parse (s : string) =
-    try
-        parser.Parse(s) :?> Program
-    with
-        | :? Piglet.Lexer.LexerException as ex -> raise <| LexerError ex
-        | :? Piglet.Parser.ParseException as ex -> raise <| ParserError ex
-        | ex -> raise <| GeneralError ex
+let Parse (s : string, fail_hard : bool) =
+    let inner() = Parser.Parse(s) :?> Program
+
+    if fail_hard then inner()
+    else try
+             inner()
+         with
+             | :? Piglet.Lexer.LexerException as ex -> raise <| LexerError ex
+             | :? Piglet.Parser.ParseException as ex -> raise <| ParserError ex
+             | ex -> raise <| GeneralError ex

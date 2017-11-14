@@ -14,6 +14,20 @@ let Tree01 = [
                  (Void, "main", []) /--> ([], [])
              ]
 let Tree02 = [
+                 field Int "glob_1"
+                 field Bool "glob_2"
+                 (Bool, "helper", [var Int "p"]) /--> ([], [
+                                                                ReturnStatement(
+                                                                    Some(
+                                                                        LiteralExpression(
+                                                                            BoolLiteral false
+                                                                        )
+                                                                    )
+                                                                )
+                                                           ])
+                 (Void, "main", [var Int "p1"; var Bool "p2"]) /--> ([var Int "test"], [])
+             ]
+let Tree03 = [
                  (Void, "main", []) /--> ([
                                             var Int "loc1"
                                             var Int "loc2"
@@ -31,6 +45,22 @@ let Tree02 = [
                                                     )
                                                 ),
                                                 None
+                                            )
+                                          ])
+             ]
+let Tree04 = [
+                 field Int "glob_1"
+                 field Bool "glob_2"
+                 (Void, "main", []) /--> ([],
+                                          [
+                                            InlineAssemblyStatement("nop")
+                                            AbkStatement
+                                            HaltStatement
+                                            WhileStatement (
+                                                LiteralExpression (
+                                                    BoolLiteral true
+                                                ),
+                                                BreakStatement
                                             )
                                           ])
              ]

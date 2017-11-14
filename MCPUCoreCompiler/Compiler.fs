@@ -13,6 +13,7 @@ type ASMVariable =
     }
 
 type ASMInstruction =
+    | Comment of string
     | Abk
     | Abs
     | Add
@@ -53,6 +54,7 @@ type ASMInstruction =
     | Pow
     | Raw of string
     | Regloc of int
+    | Regglob of int
     | Ret
     | Rol
     | Ror
@@ -111,38 +113,39 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
         lbindex <- lbindex + 1UL
         res
 
-    let rec procbinexpr = (function
-                          | (l, SyntaxTree.Or, r) ->
-                                let leftfalselabel = mklabel()
-                                let endlabel = mklabel()
-                                [
-                                    procexpr l
-                                    [Brfalse leftfalselabel]
-                                    [Ldc 1]
-                                    [Br endlabel]
-                                    [Label leftfalselabel]
-                                    procexpr r
-                                    [Label endlabel]
-                                ]
-                            | (l, SyntaxTree.And, r) ->
-                                let lefttruelabel = mklabel()
-                                let endlabel = mklabel()
-                                [
-                                    procexpr l
-                                    [Brtrue lefttruelabel]
-                                    [Ldc 0]
-                                    [Br endlabel]
-                                    [Label lefttruelabel]
-                                    procexpr r
-                                    [Label endlabel]
-                                ]
-                            | (l, op, r) ->
-                                [
-                                    procexpr l
-                                    procexpr r
-                                    [procbinop op]
-                                ]
-                            ) >> List.concat
+    let rec procbinexpr expr =
+        [Comment <| "binary expression '" + expr.ToString().Replace('\n', ' ') + "'"]
+        @ ((function
+            | (l, SyntaxTree.Or, r) ->
+                let leftfalselabel = mklabel()
+                let endlabel = mklabel()
+                [
+                    procexpr l
+                    [Brfalse leftfalselabel]
+                    [Ldc 1]
+                    [Br endlabel]
+                    [Label leftfalselabel]
+                    procexpr r
+                    [Label endlabel]
+                ]
+            | (l, SyntaxTree.And, r) ->
+                let lefttruelabel = mklabel()
+                let endlabel = mklabel()
+                [
+                    procexpr l
+                    [Brtrue lefttruelabel]
+                    [Ldc 0]
+                    [Br endlabel]
+                    [Label lefttruelabel]
+                    procexpr r
+                    [Label endlabel]
+                ]
+            | (l, op, r) ->
+                [
+                    procexpr l
+                    procexpr r
+                    [procbinop op]
+                ]) >> List.concat) expr
 
     and procbinop x = match x with
                       | SyntaxTree.Add -> Add
@@ -204,135 +207,136 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
         | LocalScope i -> Stloc i
 
     and procexpr expr =
-        match expr with
-        | ScalarAssignmentExpression(i, e) ->
-            [
-                procexpr e
-                [Dup]
-                [procidentifierstore i]
-            ]
-        | ScalarAssignmentOperatorExpression(i, o, e) ->
-            [
-                [procidentifierload i]
-                procexpr e
-                [procbinop o]
-                [Dup]
-                [procidentifierstore i]
-            ]
-        | TernaryExpression(c, x, y) ->
-            let endlabel = mklabel()
-            let falselabel = mklabel()
-            [
-                procexpr c
-                [Brfalse falselabel]
-                procexpr x
-                [Br endlabel]
-                [Label falselabel]
-                procexpr y
-                [Label endlabel]
-            ]
-        | BinaryExpression(x, o, y) -> [procbinexpr(x, o, y)]
-        | UnaryExpression(o, x) ->
-            [
-                procexpr x
-                procunop o
-            ]
-        | IdentifierExpression i -> [[procidentifierload i]]
-        | ArrayIdentifierExpression(i, n) ->
-            [
-                procexpr n
-                [( if i = IO then Ldio else Ldmem )]
-            ]
-        | ArrayAssignmentExpression(i, n, e) ->
-            [
-                procexpr e
-                [Dup]
-                procexpr n
-                [Swap]
-                [( if i = IO then Stio else Stmem )]
-            ]
-        | ArrayAssignmentOperatorExpression(i, n, o, e) ->
-            [
-                procexpr n
-                [( if i = IO then Ldio else Ldmem )]
-                procexpr e
-                [procbinop o]
-                procexpr n
-                [Swap]
-                [( if i = IO then Stio else Stmem )]
-            ]
-        | LiteralExpression l ->
-            [[Ldc (match l with
-                   | IntLiteral i -> i
-                   | BoolLiteral b -> if b then 1 else 0)]]
-        | ArraySizeExpression i ->
-            [[( if i = IO then Ldmemsz else Ldiosz )]]
-        | FunctionCallExpression(i, p) ->
-            [
-                List.collect procexpr p
-                [Call(i, p.Length)]
-            ]
-        |> List.concat
-
+        [Comment <| "expression '"  + expr.ToString().Replace('\n', ' ') + "'"]
+        @ List.concat (match expr with
+                       | ScalarAssignmentExpression(i, e) ->
+                           [
+                               procexpr e
+                               [Dup]
+                               [procidentifierstore i]
+                           ]
+                       | ScalarAssignmentOperatorExpression(i, o, e) ->
+                           [
+                               [procidentifierload i]
+                               procexpr e
+                               [procbinop o]
+                               [Dup]
+                               [procidentifierstore i]
+                           ]
+                       | TernaryExpression(c, x, y) ->
+                           let endlabel = mklabel()
+                           let falselabel = mklabel()
+                           [
+                               procexpr c
+                               [Brfalse falselabel]
+                               procexpr x
+                               [Br endlabel]
+                               [Label falselabel]
+                               procexpr y
+                               [Label endlabel]
+                           ]
+                       | BinaryExpression(x, o, y) -> [procbinexpr(x, o, y)]
+                       | UnaryExpression(o, x) ->
+                           [
+                               procexpr x
+                               procunop o
+                           ]
+                       | IdentifierExpression i -> [[procidentifierload i]]
+                       | ArrayIdentifierExpression(i, n) ->
+                           [
+                               procexpr n
+                               [( if i = IO then Ldio else Ldmem )]
+                           ]
+                       | ArrayAssignmentExpression(i, n, e) ->
+                           [
+                               procexpr e
+                               [Dup]
+                               procexpr n
+                               [Swap]
+                               [( if i = IO then Stio else Stmem )]
+                           ]
+                       | ArrayAssignmentOperatorExpression(i, n, o, e) ->
+                           [
+                               procexpr n
+                               [( if i = IO then Ldio else Ldmem )]
+                               procexpr e
+                               [procbinop o]
+                               procexpr n
+                               [Swap]
+                               [( if i = IO then Stio else Stmem )]
+                           ]
+                       | LiteralExpression l ->
+                           [[Ldc (match l with
+                                  | IntLiteral i -> i
+                                  | BoolLiteral b -> if b then 1 else 0)]]
+                       | ArraySizeExpression i ->
+                           [[( if i = IO then Ldmemsz else Ldiosz )]]
+                       | FunctionCallExpression(i, p) ->
+                           [
+                               List.collect procexpr p
+                               [Call(i, p.Length)]
+                           ]
+        )
     and procstatm stm =
-        match stm with
-        | ExpressionStatement e ->
-            match e with
-            | Expression x ->
-                let isvoid = sares.ExpressionTypes.[x].Type = Void
-                [
-                    procexpr x
-                    (if isvoid then [Pop] else [])
-                ]
-            | Nop -> []
-        | CompoundStatement(_, s) -> [List.collect procstatm s]
-        | InlineAssemblyStatement r -> [[Raw r]]
-        | IfStatement(c, s1, Some s2) ->
-            let thenlabel = mklabel()
-            let endlabel = mklabel()
-            [
-                procexpr c
-                [Brtrue thenlabel]
-                procstatm s2
-                [Br endlabel]
-                [Label thenlabel]
-                procstatm s1
-                [Label endlabel]
-            ]
-        | IfStatement(c, s, None) ->
-            let endlabel = mklabel()
-            [
-                procexpr c
-                [Brfalse endlabel]
-                procstatm s
-                [Label endlabel]
-            ]
-        | WhileStatement(c, s) ->
-            let startlabel = mklabel()
-            let condlabel = mklabel()
-            let endlabel = mklabel()
-            endlabelst.Push endlabel
-            let res = [
-                          [Br condlabel]
-                          [Label startlabel]
-                          procstatm s
-                          [Label condlabel]
-                          procexpr c
-                          [Brtrue startlabel]
-                          [Label endlabel]
-                      ]
-            ignore <| endlabelst.Pop()
-            res
-        | BreakStatement -> [[Br (endlabelst.Peek())]]
-        | ReturnStatement None -> [[Ret]]
-        | ReturnStatement (Some x) ->
-            [
-                procexpr x
-                [Ret]
-            ]
-        | AbkStatement -> [[Abk]]
-        | HaltStatement -> [[Halt]]
-        |> List.concat
+        [Comment <| "statement '"  + stm.ToString().Replace('\n', ' ') + "'"]
+        @ List.concat (match stm with
+                       | ExpressionStatement e ->
+                           match e with
+                           | Expression x ->
+                               let isvoid = sares.ExpressionTypes.[x].Type = Void
+                               [
+                                   procexpr x
+                                   (if isvoid then [Pop] else [])
+                               ]
+                           | Nop -> []
+                       | CompoundStatement(_, s) -> [List.collect procstatm s]
+                       | InlineAssemblyStatement r -> [[Raw r]]
+                       | IfStatement(c, s1, Some s2) ->
+                           let thenlabel = mklabel()
+                           let endlabel = mklabel()
+                           [
+                               procexpr c
+                               [Brtrue thenlabel]
+                               procstatm s2
+                               [Br endlabel]
+                               [Label thenlabel]
+                               procstatm s1
+                               [Label endlabel]
+                           ]
+                       | IfStatement(c, s, None) ->
+                           let endlabel = mklabel()
+                           [
+                               procexpr c
+                               [Brfalse endlabel]
+                               procstatm s
+                               [Label endlabel]
+                           ]
+                       | WhileStatement(c, s) ->
+                           let startlabel = mklabel()
+                           let condlabel = mklabel()
+                           let endlabel = mklabel()
+                           endlabelst.Push endlabel
+                           let res = [
+                                         [Br condlabel]
+                                         [Label startlabel]
+                                         procstatm s
+                                         [Label condlabel]
+                                         procexpr c
+                                         [Brtrue startlabel]
+                                         [Label endlabel]
+                                     ]
+                           ignore <| endlabelst.Pop()
+                           res
+                       | BreakStatement -> [[Br (endlabelst.Peek())]]
+                       | ReturnStatement None -> [[Ret]]
+                       | ReturnStatement (Some x) ->
+                           [
+                               procexpr x
+                               [Ret]
+                           ]
+                       | AbkStatement -> [[Abk]]
+                       | HaltStatement -> [[Halt]]
+        )
 
     let procvardecl (mi : byref<_>) f d =
         let var = CreateASMVariable d
@@ -390,7 +394,7 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
             |> List.concat
         fromstat stm
 
-    member x.BuildMethod (rettype, name, para, (locdec, stms)) =
+    member __.BuildMethod (rettype, name, para, (locdec, stms)) =
         {
             ASMMethod.Name = name
             ReturnType = rettype
@@ -414,17 +418,65 @@ type ASMBuilder (sares : SemanticAnalysisResult) =
         let asmbuilder = ASMMethodBuilder (sares, varmap)
         asmbuilder.BuildMethod
 
-    member x.BuildClass (prog : SyntaxTree.Program) =
-        let builtin = [
-                          Func__abs, Int, [], [], []
-                      ]
-                      |> List.map (fun (f, t, p, l, b) -> {
-                                                              ASMMethod.Name = f.ToString()
-                                                              ReturnType = t
-                                                              Parameters = p
-                                                              Locals = l
-                                                              Body = b
-                                                          })
+    member __.VariableMap = varmap
+
+    member __.BuildClass (prog : SyntaxTree.Program) =
+        let builtin = 
+            let nv s = { ASMVariable.Name = s }
+            [
+                Func__abs, Int, 1, 0, [
+                    Ldarg 0s
+                    Abs
+                    Ret
+                ]
+                Func__sign, Int, 1, 0, [
+                    Ldarg 0s
+                    Sign
+                    Ret
+                ]
+                Func__pow, Int, 2, 0, [
+                    Ldarg 0s
+                    Ldarg 1s
+                    Pow
+                    Ret
+                ]
+                Func__log2, Int, 1, 0, [
+                    Ldarg 0s
+                    Log2
+                    Ret
+                ]
+                Func__log10, Int, 1, 0, [
+                    Ldarg 0s
+                    Log10
+                    Ret
+                ]
+                Func__exp, Int, 1, 0, [
+                    Ldarg 0s
+                    Exp
+                    Ret
+                ]
+                Func__iodir, Void, 2, 0, [
+                    Ldarg 0s
+                    Ldarg 1s
+                    Stiodir
+                    Ret
+                ]
+                Func__printi, Void, 1, 0, [
+                    Ldarg 0s
+                    Syscall 1
+                    Pop
+                    Ret
+                ]
+            ]
+            |> List.map (fun (f, t, p, l, b) -> {
+                                                    ASMMethod.Name = f.ToString()
+                                                    ReturnType = t
+                                                    Parameters = if p < 1 then []
+                                                                 else List.map (fun x -> nv <| "arg" + x.ToString()) [1..p]
+                                                    Locals = if l < 1 then []
+                                                             else List.map (fun x -> nv <| "loc" + x.ToString()) [1..l]
+                                                    Body = b
+                                                })
         {
             Globals = prog
                       |> List.choose (fun x -> match x with

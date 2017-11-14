@@ -19,7 +19,7 @@ namespace MCPUCompiler
     public static class Program
     {
         public static readonly string AssemblyName = new FileInfo(typeof(Program).Assembly.Location).Name;
-        public const string OPCODE_PATH = "/com/unknown6656/opcodes";
+        public const string OPCODE_PATH = "epsilonpotato/mcpu/mcpuarch/opcodes/";
 
 
         public static void Main(string[] args)
@@ -38,8 +38,9 @@ namespace MCPUCompiler
                 using (ZipArchive zip = new ZipArchive(ms, ZipArchiveMode.Read, false))
                 {
                     instructions = (from entry in zip.Entries
-                                    where entry.FullName.ToLower().Replace('\\', '/').StartsWith(OPCODE_PATH)
-                                    select entry.Name).ToArray();
+                                    let name = entry.FullName.ToLower().Replace('\\', '/').Trim('/')
+                                    where name.StartsWith(OPCODE_PATH)
+                                    select name.Replace(OPCODE_PATH, "").Replace(".class", "")).ToArray();
 
                     using (Stream s = zip.GetEntry("plugin.yml").Open())
                     using (StreamReader sr = new StreamReader(s))
@@ -65,31 +66,35 @@ namespace MCPUCompiler
             if (instructions != null)
                 using (Compiler cmp = new Compiler(instructions))
                 {
+                    "Instructions provided by the .jar file:".Print();
+
+                    Print(from line in string.Join(", ", instructions).SpliceText(@"([^,]+(,\s)?){1,20}")
+                          select $"    {line}");
+
                     string code = File.ReadAllText(dic["in"]);
                     CompilerResult result = cmp.Compile(code);
-                    int i = 0;
 
                     "Loaded the following source code:".Print(Cyan);
 
-                    foreach (string line in code.Split('\n'))
-                        $"{++i,3}: {line}".Print();
+                    Print(code.Split('\n'), true);
+                    Print("");
 
                     if (result.Success)
                     {
+                        foreach (var f in result.Functions ?? new List<Action>())
+                            f?.Invoke();
+
                         "The compilation was successful. Generated instructions:".Print(Green);
-
-                        i = 0;
-
-                        foreach (string line in result.Lines)
-                            $"{++i,3}: {line}".Print();
-                        // TODO
+                        
+                        Print(result.Lines, true);
+                        Print("");
                     }
                     else
                     {
                         "The compiler could not compile the input file due to the follwing reason(s):".Print(Red);
 
-                        foreach (string line in result.Error.Split('\n'))
-                            line.Print();
+                        Print(result.Error.Split('\n'));
+                        Print("");
                     }
                 }
 
@@ -154,7 +159,21 @@ Options:
     -out=...    The output .asm file
 ".Print();
 
-        private static void Print(this IEnumerable<string> s, bool linenumbers = false, ConsoleColor c = White)
+        internal static void Print(this IEnumerable<string> s, bool linenumbers = false, ConsoleColor c = White)
+        {
+            if (linenumbers)
+            {
+                int i = 0;
+
+                foreach (string line in s)
+                    $"{++i,4}: {line}".Print(c);
+            }
+            else
+                foreach (string line in s)
+                    line.Print(c);
+        }
+
+        internal static void Print(this string s, ConsoleColor c = White)
         {
             ForegroundColor = DarkGray;
             Write($"[{DateTime.Now:HH:mm:ss.ffffff}] ");
@@ -162,17 +181,11 @@ Options:
             WriteLine(s);
         }
 
-        private static void Print(this string s, ConsoleColor c = White)
-        {
-            ForegroundColor = DarkGray;
-            Write($"[{DateTime.Now:HH:mm:ss.ffffff}] ");
-            ForegroundColor = c;
-            WriteLine(s);
-        }
-
-        private static void PrintT(this string s, ConsoleColor c = White) => s.Trim().Print(c);
+        internal static void PrintT(this string s, ConsoleColor c = White) => s.Trim().Print(c);
 
         internal static bool match(this string str, string pat, out Match m, RegexOptions opt = RegexOptions.IgnoreCase | RegexOptions.Compiled) =>
             (m = Regex.Match(str, pat, opt)).Success;
+
+        internal static string[] SpliceText(this string text, string pattern) => Regex.Matches(text + " ", pattern).Cast<Match>().Select(m => m.Value).ToArray();
     }
 }

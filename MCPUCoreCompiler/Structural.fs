@@ -1,10 +1,14 @@
 ﻿module MCPUCompiler.Core.SyntaxTree
 
+let inline (!/) x = x.ToString()
 
-type Identifier = string
-type IdentifierRef = { Identifier : string; }
+type IdentifierRef =
+    {
+        Identifier : string;
+    }
     with
         override x.ToString() = x.Identifier
+type Identifier = string
 type ArrayIdentifierRef =
     | Memory
     | IO
@@ -90,10 +94,9 @@ and Literal =
     | BoolLiteral of bool
     | IntLiteral of int
     override x.ToString() =
-        function
-        | BoolLiteral b   -> b.ToString()
-        | IntLiteral i    -> i.ToString()
-       <| x
+        match x with
+        | BoolLiteral b -> if b then "true" else "false"
+        | IntLiteral i -> !/i
 type Expression =
     | ScalarAssignmentExpression of IdentifierRef * Expression
     | ScalarAssignmentOperatorExpression of IdentifierRef * BinaryOperator * Expression
@@ -109,21 +112,25 @@ type Expression =
     | LiteralExpression of Literal
     override x.ToString() =
         match x with
-        | TernaryExpression(c, x, y) -> sprintf "(%A) ? (%A) : (%A)" c x y
-        | ScalarAssignmentExpression(x, y) -> sprintf "%A = (%A)" x y
-        | ScalarAssignmentOperatorExpression(x, o, y) -> sprintf "%A %A= (%A)" x o y
-        | ArrayAssignmentExpression(x, n, y) -> sprintf "%A[%A] = (%A)" x n y
-        | ArrayAssignmentOperatorExpression(x, n, o, y) -> sprintf "%A[%A] %A= (%A)" x n o y
-        | BinaryExpression(x, o, y) -> sprintf "(%A) %A (%A)" x o y
-        | ArraySizeExpression x -> sprintf "sizeof(%A)" x
-        // TODO
+        | TernaryExpression(c, x, y) -> sprintf "(%s) ? (%s) : (%s)" !/c !/x !/y
+        | ScalarAssignmentExpression(x, y) -> sprintf "%s = (%s)" !/x !/y
+        | ScalarAssignmentOperatorExpression(x, o, y) -> sprintf "%s %s= (%s)" !/x !/o !/y
+        | ArrayAssignmentExpression(x, n, y) -> sprintf "%s[%s] = (%s)" !/x !/n !/y
+        | ArrayAssignmentOperatorExpression(x, n, o, y) -> sprintf "%s[%s] %s= (%s)" !/x !/n !/o !/y
+        | BinaryExpression(x, o, y) -> sprintf "(%s) %s (%s)" !/x !/o !/y
+        | ArraySizeExpression x -> sprintf "sizeof(%s)" !/x
+        | LiteralExpression l -> !/l
+        | ArrayIdentifierExpression(x, y) -> sprintf "%s[%s]" !/x !/y
+        | FunctionCallExpression(x, y) -> sprintf "%s(%s)" x (System.String.Join(", ", y))
+        | IdentifierExpression i -> i.Identifier
+        | UnaryExpression(o, x) -> sprintf "%s(%s)" !/o !/x
 and Arguments = Expression list
 type ExpressionStatement =
     | Expression of Expression
     | Nop
     override x.ToString() =
         match x with
-        | Expression e -> e.ToString() + ";"
+        | Expression e -> !/e + ";"
         | Nop -> ";"
 type LocalDeclarations = VariableDeclaration list
 type Statement =
@@ -139,8 +146,21 @@ type Statement =
     | InlineAssemblyStatement of string
     override x.ToString() =
         match x with
-        | ExpressionStatement es -> es.ToString()
-        // | CompoundStatement c -> sprintf "{\n%A%A}" (for d in fst c -> d.ToString() + "\n") (for d in snd c -> d.ToString() + "\n")
+        | AbkStatement -> "abk;"
+        | HaltStatement -> "halt;"
+        | BreakStatement -> "break;"
+        | ReturnStatement None -> "return;"
+        | ReturnStatement (Some s) -> "return " + !/s + ";"
+        | ExpressionStatement es -> !/es
+        | IfStatement (e, s1, None) -> sprintf "if (%s)\n{\n%s\n}" !/e !/s1
+        | IfStatement (e, s1, Some s2) -> sprintf "if (%s)\n{\n%s\n}\nelse\n{\n%s\n}" !/e !/s1 !/s2
+        | InlineAssemblyStatement s -> sprintf "__asm \"%s\";" s
+        | WhileStatement (e, s) -> sprintf "while (%s)\n{\n%s\n}" !/e !/s
+        | CompoundStatement (l, s) ->
+            let pline o f = String.concat "" (List.toSeq [for d in o -> f d + "\n"])
+            let vars = pline l (fun (t, i) -> sprintf "%s %s;" !/t !/i)
+            let ins = pline s (!/)
+            sprintf "{\n%s%s}" vars ins
 and CompoundStatement = LocalDeclarations * Statement list
 and IfStatement = Expression * Statement * Statement option
 and WhileStatement = Expression * Statement
@@ -149,6 +169,11 @@ type FunctionDeclaration = TypeSpec * Identifier * Parameters * CompoundStatemen
 type Declaration =
     | GlobalVariableDeclaration of VariableDeclaration
     | FunctionDeclaration of FunctionDeclaration
+    override x.ToString() =
+        match x with
+        | GlobalVariableDeclaration(t, i) -> sprintf "%s %s;" !/t !/i
+        | FunctionDeclaration(r, i, p, c) -> sprintf "%s %s(%s)\n%s" !/r !/i (String.concat ", " ([for (t, i) in p -> !/t + " " + !/i]
+                                                                                                  |> List.toSeq)) !/(CompoundStatement c)
 type Program = Declaration list
 
 type BuildInFunctions =
