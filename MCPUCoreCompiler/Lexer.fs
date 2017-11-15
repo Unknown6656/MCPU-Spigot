@@ -43,8 +43,8 @@ let unaryOperator             = nterm<UnaryOperator>()
 let optionalArguments         = nterm<Arguments>()
 let arguments                 = nterm<Arguments>()
 
-let CastInt          = term "(int)"
-let CastBool         = term "(bool)"
+let CastInt          = term "\(int\)"
+let CastBool         = term "\(bool\)"
 let AssignRotateRight = term ">>>="
 let AssignShiftRight = term  ">>="
 let AssignRotateLeft = term  "<<<="
@@ -80,11 +80,12 @@ let doubleMinus      = term  "--"
 let doublePlus       = term  @"\+\+"
 let tilde            = term  "~"
 let exclamation      = term  "!"
-let questionmark     = term  "?"
+let questionmark     = term  @"\?"
 let colon            = term  ":"
 let asterisk         = term  @"\*"
 let doubleAsterisk   = term  @"\*\*"
 let hat              = term  @"^"
+let stringLiteral    = termf "\"[^\"]+\""                               (fun s -> s.Remove(s.Length - 1).Remove(0, 1))
 let ioLiteral        = termf @"(in|out)"                                (fun s -> BoolLiteral(s.ToLower() <> "in"))
 let intLiteral       = termf @"\d+"                                     (fun s -> IntLiteral(int32 s))
 let hexLiteral       = termf @"(0(x|X)[0-9a-fA-F]+|[0-9a-fA-F]+(h|H))"  (fun s -> IntLiteral(System.Int32.Parse(s, NumberStyles.HexNumber)))
@@ -114,8 +115,6 @@ let closeAngleEquals = term  ">="
 let closeAngle       = term  ">"
 let ampersand        = term  "&&?"
 let period           = term  @"\."
-let doubleQuote      = term  "\""
-let asm              = termf "[^\"]+" id
 
 
 type OpetatorAssociativity = Left | Right
@@ -254,7 +253,7 @@ reduce2 returnStatement returnKeyword semicolon (fun _ _ -> None)
 reduce2 breakStatement breakKeyword semicolon (fun _ _ -> ())
 reduce2 haltStatement haltKeyword semicolon (fun _ _ -> ())
 reduce2 abkStatement abkKeyword semicolon (fun _ _ -> ())
-reduce5 asmStatement asmKeyword doubleQuote asm doubleQuote semicolon (fun _ _ a _ _ -> a)
+reduce3 asmStatement asmKeyword stringLiteral semicolon (fun _ a _ -> a)
 
 reduce1 binaryAssignOperator AssignAdd (fun _ -> Add)
 reduce1 binaryAssignOperator AssignAnd (fun _ -> And)
@@ -324,18 +323,15 @@ reducef optionalArguments (fun () -> [])
 
 reducelist arguments comma expression
 
-conf.LexerSettings.Ignore <- [| @"\s+"; @"/\*(.|[\r\n])*?\*/"; @"//[^\n]*\n" |]
+conf.LexerSettings.Ignore <- [| @"\s+"; @"/\*(.|[\r\t\n])*?\*/"; @"//[^\n\r]*(\n|$)" |]
 
 
 let Parser = conf.CreateParser()
 
-let Parse (s : string, fail_hard : bool) =
-    let inner() = Parser.Parse(s) :?> Program
-
-    if fail_hard then inner()
-    else try
-             inner()
-         with
-             | :? Piglet.Lexer.LexerException as ex -> raise <| LexerError ex
-             | :? Piglet.Parser.ParseException as ex -> raise <| ParserError ex
-             | ex -> raise <| GeneralError ex
+let Parse (s : string) =
+    try
+        Parser.Parse(s.Replace('\t', ' ')) :?> Program
+    with
+        | :? Piglet.Lexer.LexerException as ex -> raise <| LexerError ex
+        | :? Piglet.Parser.ParseException as ex -> raise <| ParserError ex
+        | ex -> raise <| GeneralError ex

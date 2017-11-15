@@ -137,7 +137,7 @@ namespace MCPUCompiler
                 if (!dic.ContainsKey("in"))
                     "No input code file was provided.".Print(Red);
                 else if (!File.Exists(dic["in"]))
-                    "No input code file does not exist or could not be found.".Print(Red);
+                    "The input code file does not exist or could not be found.".Print(Red);
                 else if (!dic.ContainsKey("out"))
                     "No output file was provided.".Print(Red);
                 else

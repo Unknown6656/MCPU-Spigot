@@ -1,4 +1,4 @@
-﻿#define FAIL_HARD
+﻿// #define FAIL_HARD
 
 using System;
 using System.Collections.Generic;
@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace MCPUCompiler
 {
+    using System.Text.RegularExpressions;
     using MCPUCompiler.Core;
     using MCPUCompiler.Core.Testing;
     using __comp = Core.Compiler;
@@ -33,9 +34,9 @@ namespace MCPUCompiler
 #endif
             {
                 List<Action> funcs = new List<Action>();
-
+                
                 // var tree = Tests.Tree03;
-                var tree = Lexer.Parse(code, true);
+                var tree = Lexer.Parse(code);
                 var sares = Parser.Analyze(tree);
                 var compl = new __comp.ASMBuilder(sares);
                 var res = compl.BuildClass(tree);
@@ -112,8 +113,7 @@ namespace MCPUCompiler
 
             while (ex != null)
             {
-                sb.Insert(0, ex.StackTrace + '\n');
-                sb.Insert(0, ex.Message + '\n');
+                sb.Insert(0, $"{ex.GetType()}: {Regex.Replace(ex.Message, @"[ \r\n\t]+", " ")}\n{ex.StackTrace}\n");
 
                 ex = ex.InnerException;
             }
