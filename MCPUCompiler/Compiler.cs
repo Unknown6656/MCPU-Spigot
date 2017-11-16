@@ -1,26 +1,32 @@
 ﻿// #define FAIL_HARD
 
-using System;
+using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System;
+
+using MCPUCompiler.Core.Testing;
+using MCPUCompiler.Core;
 
 namespace MCPUCompiler
 {
-    using System.Text.RegularExpressions;
-    using MCPUCompiler.Core;
-    using MCPUCompiler.Core.Testing;
     using __comp = Core.Compiler;
 
 
     public sealed class Compiler
         : IDisposable
     {
-        public string[] InstructionSet { get; }
+        public (string, int?)[] InstructionSet { get; }
+        public bool DoNotGenerateComments { get; }
 
 
-        public Compiler(string[] instructions) => InstructionSet = instructions;
+        public Compiler((string, int?)[] instructions, bool nocomments = false)
+        {
+            InstructionSet = instructions;
+            DoNotGenerateComments = nocomments;
+        }
 
         public void Dispose()
         {
@@ -34,7 +40,7 @@ namespace MCPUCompiler
 #endif
             {
                 List<Action> funcs = new List<Action>();
-                
+
                 // var tree = Tests.Tree03;
                 var tree = Lexer.Parse(code);
                 var sares = Parser.Analyze(tree);
@@ -42,7 +48,7 @@ namespace MCPUCompiler
                 var res = compl.BuildClass(tree);
                 var emt = new Emitter(res);
                 var asm = emt.Merge();
-                var outp = emt.Generate();
+                var outp = emt.Generate(DoNotGenerateComments);
                 var acode = string.Join("\n", outp); // join, as some 'lines' can have line-breaks in themselves
 
                 funcs.Add(() =>

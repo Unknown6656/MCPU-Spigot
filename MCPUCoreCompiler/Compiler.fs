@@ -44,6 +44,8 @@ type ASMInstruction =
     | Loge
     | Log2
     | Log10
+    | Max
+    | Min
     | Mod
     | Mul
     | Neg
@@ -70,11 +72,13 @@ type ASMInstruction =
     | Sub
     | Swap
     | Syscall of int
+    | UUID
     | Xor
 
 type ASMMethod =
     {
         Name : string
+        IsInlined : bool
         ReturnType : TypeSpec
         Parameters : ASMVariable list
         Locals : ASMVariable list
@@ -103,6 +107,7 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
     let mutable lbindex = 0UL
     let arrassgnloc = Dictionary<Expression, int16>()
     let endlabelst = Stack<ASMLabel>()
+    let condlabelst = Stack<ASMLabel>()
     
     let lookupScope i =
         let decl = sares.SymbolTable.[i]
@@ -276,6 +281,7 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
                                List.collect procexpr p
                                [Call(i, p.Length)]
                            ]
+                       | UUIDExpression -> [[UUID]]
         )
     and procstatm stm =
         [Comment <| "statement '"  + stm.ToString().Replace('\n', ' ') + "'"]
@@ -316,6 +322,7 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
                            let condlabel = mklabel()
                            let endlabel = mklabel()
                            endlabelst.Push endlabel
+                           condlabelst.Push condlabel
                            let res = [
                                          [Br condlabel]
                                          [Label startlabel]
@@ -326,7 +333,9 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
                                          [Label endlabel]
                                      ]
                            ignore <| endlabelst.Pop()
+                           ignore <| condlabelst.Pop()
                            res
+                       | ContinueStatement -> [[Br (condlabelst.Peek())]]
                        | BreakStatement -> [[Br (endlabelst.Peek())]]
                        | ReturnStatement None -> [[Ret]]
                        | ReturnStatement (Some x) ->
@@ -394,16 +403,18 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
             |> List.concat
         fromstat stm
 
-    member __.BuildMethod (rettype, name, para, (locdec, stms)) =
+    member __.BuildMethod (rettype, name, para, (locdec, stms), inlined) =
+        let locals = List.concat [
+                                    List.map proclocdecl locdec
+                                    List.collect collectlocdecl stms
+                                 ]
         {
             ASMMethod.Name = name
             ReturnType = rettype
             Parameters = List.map procparam para
-            Locals = List.concat [
-                                    List.map proclocdecl locdec
-                                    List.collect collectlocdecl stms
-                                 ]
-            Body = List.collect procstatm stms
+            Locals = locals
+            IsInlined = inlined
+            Body = Regloc locals.Length :: List.collect procstatm stms
         }
 
 type ASMBuilder (sares : SemanticAnalysisResult) =
@@ -427,55 +438,58 @@ type ASMBuilder (sares : SemanticAnalysisResult) =
                 Func__abs, Int, 1, 0, [
                     Ldarg 0s
                     Abs
-                    Ret
+                ]
+                Func__min, Int, 2, 0, [
+                    Ldarg 0s
+                    Ldarg 1s
+                    Min
+                ]
+                Func__max, Int, 2, 0, [
+                    Ldarg 0s
+                    Ldarg 1s
+                    Max
                 ]
                 Func__sign, Int, 1, 0, [
                     Ldarg 0s
                     Sign
-                    Ret
                 ]
                 Func__pow, Int, 2, 0, [
                     Ldarg 0s
                     Ldarg 1s
                     Pow
-                    Ret
                 ]
                 Func__log2, Int, 1, 0, [
                     Ldarg 0s
                     Log2
-                    Ret
                 ]
                 Func__log10, Int, 1, 0, [
                     Ldarg 0s
                     Log10
-                    Ret
                 ]
                 Func__exp, Int, 1, 0, [
                     Ldarg 0s
                     Exp
-                    Ret
                 ]
                 Func__iodir, Void, 2, 0, [
                     Ldarg 0s
                     Ldarg 1s
                     Stiodir
-                    Ret
                 ]
                 Func__printi, Void, 1, 0, [
                     Ldarg 0s
                     Syscall 1
                     Pop
-                    Ret
                 ]
             ]
             |> List.map (fun (f, t, p, l, b) -> {
                                                     ASMMethod.Name = f.ToString()
+                                                    IsInlined = true
                                                     ReturnType = t
                                                     Parameters = if p < 1 then []
                                                                  else List.map (fun x -> nv <| "arg" + x.ToString()) [1..p]
                                                     Locals = if l < 1 then []
                                                              else List.map (fun x -> nv <| "loc" + x.ToString()) [1..l]
-                                                    Body = b
+                                                    Body = b //  @ [Ret]
                                                 })
         {
             Globals = prog

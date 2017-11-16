@@ -18,15 +18,31 @@ type Emitter (prog : ASMProgram) =
         let func = prog.Methods
         let fdic = dict [for f in func -> f.Name, (nextlabel(), f)]
         let toasm (f : ASMMethod) =
+            let mutable loccnt = f.Locals.Length
+            let body = List.collect (fun ins -> match ins with
+                                                | Call (f, n) ->
+                                                    let target = fdic.[f]
+
+                                                    if (snd target).IsInlined then
+                                                        let body = (snd target).Body
+                                                                    |> List.takeWhile (function
+                                                                                        | Ret -> false
+                                                                                        | _ -> true)
+                                                        [
+                                                            // TODO
+                                                        ] @ body
+                                                    else
+                                                        [Call (sprintf "%d" (fst target), n)]
+                                                 | Regloc n ->
+                                                    loccnt <- loccnt + n
+                                                    []
+                                                 | _ -> [ins]) f.Body
+            
             [
                 Comment <| sprintf "function '%s'" f.Name
                 Label <| fst fdic.[f.Name]
-                Regloc f.Locals.Length
-            ]
-            @ List.map (fun ins -> match ins with
-                                   | Call (f, n) -> Call (sprintf "%d" (fst fdic.[f]), n)
-                                   | _ -> ins) f.Body
-            @ [
+                Regloc loccnt
+            ] @ body @ [
                 Ret
                 Comment <| sprintf "end of function '%s'" f.Name
             ]
@@ -41,9 +57,12 @@ type Emitter (prog : ASMProgram) =
             |> List.concat
         )
     
-    member x.Generate() = 
-        ()
-        |> x.Merge
+    member x.Generate b = 
+        x.Merge()
+        |> List.filter (fun x -> if b then match x with
+                                           | Comment _ -> false
+                                           | _ -> true
+                                 else true)
         |> List.map (function
                     | Abk -> "abk"
                     | Abs -> "abs"
@@ -75,6 +94,8 @@ type Emitter (prog : ASMProgram) =
                     | Loge -> "loge"
                     | Log2 -> "log2"
                     | Log10 -> "log10"
+                    | Max -> "max"
+                    | Min -> "min"
                     | Mod -> "mod"
                     | Mul -> "mul"
                     | Neg -> "neg"
@@ -101,7 +122,8 @@ type Emitter (prog : ASMProgram) =
                     | Sub -> "sub"
                     | Swap -> "swap"
                     | Syscall i -> sprintf "syscall %xh" i
+                    | UUID -> "uuid"
                     | Xor -> "xor"
-                    | Comment s -> "// " + s)
+                    | Comment s -> "; " + s)
         |> List.toArray
         

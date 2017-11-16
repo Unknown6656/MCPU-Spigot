@@ -66,6 +66,9 @@ public final class MCPUAssemblyCompiler
 
             line = ChatColor.stripColor(line);
             
+            if (line.contains(";"))
+                line = line.substring(line.indexOf(';') + 1).trim();
+            
             if (line.matches("^[a-z_]\\w*\\:"))
             {
                 line = line.substring(0, line.indexOf(':')).toLowerCase();

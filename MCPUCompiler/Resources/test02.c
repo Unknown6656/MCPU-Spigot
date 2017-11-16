@@ -6,8 +6,12 @@ void init(void)
 {
     int i;
 
-    for (i = 0; i < cnt; ++i)
+    while (i < cnt)
+    {
         setiodir(i, 1);
+        
+        i += 1;
+    }
 }
 
 void main(void)

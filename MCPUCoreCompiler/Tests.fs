@@ -4,9 +4,34 @@ open MCPUCompiler.Core.SyntaxTree;
 
 let internal var t i = (t, i) : VariableDeclaration
 let internal field t i = GlobalVariableDeclaration(t, i)
-let internal (/-->) (t, i, p) c = FunctionDeclaration(t, i, p, c)
+let internal (/-->) (t, i, p) c = FunctionDeclaration(t, i, p, c, false)
 let internal idref s = IdentifierExpression { Identifier = s }
 
+
+let Code01 = @"
+void main(void)
+{
+}
+"
+//int g1;
+//bool g2;
+
+//void main(int p1, bool p2)
+//{
+//    bool g2;
+//}
+
+//void helper(bool p1)
+//{
+//    int l1;
+//}
+let Code02 = @"
+
+void main(int)
+{
+}
+
+"
 
 let Tree01 = [
                  field Int "glob_1"

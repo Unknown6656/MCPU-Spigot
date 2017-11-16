@@ -110,6 +110,7 @@ type Expression =
     | FunctionCallExpression of Identifier * Arguments
     | ArraySizeExpression of ArrayIdentifierRef
     | LiteralExpression of Literal
+    | UUIDExpression
     override x.ToString() =
         match x with
         | TernaryExpression(c, x, y) -> sprintf "(%s) ? (%s) : (%s)" !/c !/x !/y
@@ -124,6 +125,7 @@ type Expression =
         | FunctionCallExpression(x, y) -> sprintf "%s(%s)" x (System.String.Join(", ", y))
         | IdentifierExpression i -> i.Identifier
         | UnaryExpression(o, x) -> sprintf "%s(%s)" !/o !/x
+        | UUIDExpression -> "__uuidof(this)"
 and Arguments = Expression list
 type ExpressionStatement =
     | Expression of Expression
@@ -141,6 +143,7 @@ type Statement =
     | WhileStatement of WhileStatement
     | ReturnStatement of Expression option
     | BreakStatement
+    | ContinueStatement
     | HaltStatement
     | AbkStatement
     | InlineAssemblyStatement of string
@@ -149,6 +152,7 @@ type Statement =
         | AbkStatement -> "abk;"
         | HaltStatement -> "halt;"
         | BreakStatement -> "break;"
+        | ContinueStatement -> "continue;"
         | ReturnStatement None -> "return;"
         | ReturnStatement (Some s) -> "return " + !/s + ";"
         | ExpressionStatement es -> !/es
@@ -165,20 +169,22 @@ and CompoundStatement = LocalDeclarations * Statement list
 and IfStatement = Expression * Statement * Statement option
 and WhileStatement = Expression * Statement
 //and ForStatement = ExpressionStatement * Expression * ExpressionStatement * Statement
-type FunctionDeclaration = TypeSpec * Identifier * Parameters * CompoundStatement
+type FunctionDeclaration = TypeSpec * Identifier * Parameters * CompoundStatement * bool
 type Declaration =
     | GlobalVariableDeclaration of VariableDeclaration
     | FunctionDeclaration of FunctionDeclaration
     override x.ToString() =
         match x with
         | GlobalVariableDeclaration(t, i) -> sprintf "%s %s;" !/t !/i
-        | FunctionDeclaration(r, i, p, c) -> sprintf "%s %s(%s)\n%s" !/r !/i (String.concat ", " ([for (t, i) in p -> !/t + " " + !/i]
-                                                                                                  |> List.toSeq)) !/(CompoundStatement c)
+        | FunctionDeclaration(r, i, p, c, l) -> sprintf "%s%s %s(%s)\n%s" (if l then "inline " else "") !/r !/i (String.concat ", " ([for (t, i) in p -> !/t + " " + !/i]
+                                                                                                                 |> List.toSeq)) !/(CompoundStatement c)
 type Program = Declaration list
 
 type BuildInFunctions =
     | Func__printi
     | Func__abs
+    | Func__min
+    | Func__max
     | Func__sign
     | Func__pow
     | Func__log2
@@ -187,6 +193,8 @@ type BuildInFunctions =
     | Func__exp
     override x.ToString() = function
                             | Func__printi -> "printi"
+                            | Func__min -> "min"
+                            | Func__max -> "max"
                             | Func__abs -> "abs"
                             | Func__sign -> "sign"
                             | Func__pow -> "pow"

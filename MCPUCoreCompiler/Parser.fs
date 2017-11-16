@@ -8,6 +8,7 @@ type FunctionTableEntry =
     {
         ReturnType : TypeSpec;
         ParameterTypes : VariableType list;
+        IsInlined : bool;
     }
    
 let EntryPointName = "main"
@@ -17,10 +18,17 @@ let (|Sbool|_|) (t : VariableType) = if t = !/Bool then Some () else None
 let (|Sint|_|) (t : VariableType) = if t = !/Int then Some () else None
 let DeclarationType : VariableDeclaration -> VariableType = fst >> (!/)
 let BuildInFunctions : (BuildInFunctions * FunctionTableEntry) list =
-    let (/-->) p r = { ReturnType = r; ParameterTypes = [ for x in p -> { Type = x; IsArray = false } ] }
+    let (/-->) p r =
+        {
+            IsInlined = true
+            ReturnType = r
+            ParameterTypes = [ for x in p -> { Type = x; IsArray = false } ]
+        }
     [
         Func__printi, [Int] /--> Void
         Func__abs, [Int] /--> Int
+        Func__min, [Int; Int] /--> Int
+        Func__max, [Int; Int] /--> Int
         Func__sign, [Int] /--> Int
         Func__pow, [Int; Int] /--> Int
         // Func__log, [Int] /--> Int
@@ -69,13 +77,47 @@ type internal SymbolScopeStack() =
 type FunctionTable(program) as self =
     inherit Dictionary<Identifier, FunctionTableEntry>()
 
+    let rec containscall =
+        let rec scanBody l = (List.filter (function
+                                           | CompoundStatement(_, s) -> scanBody s
+                                           | IfStatement(s, c, None) -> scanExpr s || scanBody [c]
+                                           | IfStatement(s, c1, Some c2) -> scanExpr s || scanBody [c1; c2]
+                                           | WhileStatement(s, c)  -> scanExpr s || scanBody [c]
+                                           | ExpressionStatement (Expression s)
+                                           | ReturnStatement (Some s) -> scanExpr s
+                                           | _ -> false) l
+                              |> List.length) > 0
+        and scanExpr = function
+                       | UnaryExpression(_, e)
+                       | ScalarAssignmentExpression(_, e)
+                       | ArrayIdentifierExpression(_, e)
+                       | ScalarAssignmentOperatorExpression(_, _, e) -> scanExpr e
+                       | ArrayAssignmentExpression(_, e1, e2)
+                       | ArrayAssignmentOperatorExpression(_, e1, _, e2)
+                       | BinaryExpression(e1, _, e2) -> scanExpr e1 || scanExpr e2
+                       | TernaryExpression(e1, e2, e3) -> scanExpr e1 || scanExpr e2 || scanExpr e3
+                       | FunctionCallExpression _ -> true
+                       | _ -> false
+        snd >> scanBody
+
     let rec scanDeclaration =
         function
         | GlobalVariableDeclaration x -> ()
-        | FunctionDeclaration (t, i, p, _) ->
+        | FunctionDeclaration (t, i, p, b, l) ->
             if self.ContainsKey i then
                 raise <| FunctionAlreadyDefined i
-            self.Add(i, { ReturnType = t; ParameterTypes = List.map DeclarationType p; })
+            else
+                if l then
+                    if containscall b then
+                        raise <| CannotBeInlined i
+                    elif i = EntryPointName then
+                        raise <| MainCannotBeInlined
+                        
+                self.Add(i, {
+                                IsInlined = l
+                                ReturnType = t
+                                ParameterTypes = List.map DeclarationType p
+                            })
 
     do
         List.iter (fun f -> self.Add((fst f).ToString(), snd f)) BuildInFunctions
@@ -93,7 +135,7 @@ type SymbolTable(program) as self =
                               | GlobalVariableDeclaration x -> symbolScopeStack.AddDeclaration x
                               | FunctionDeclaration x -> scanFunctionDeclaration x
 
-    and scanFunctionDeclaration (functionReturnType, _, parameters, compoundStatement) =
+    and scanFunctionDeclaration (functionReturnType, _, parameters, compoundStatement, _) =
         let rec scanCompoundStatement (localDeclarations, statements) =
             symbolScopeStack.Push()
             List.iter symbolScopeStack.AddDeclaration localDeclarations
@@ -119,6 +161,7 @@ type SymbolTable(program) as self =
                             | ReturnStatement None ->
                                 if functionReturnType <> Void then
                                     raise <| CannotConvertType !/Void !/functionReturnType
+                            | ContinueStatement
                             | BreakStatement ->
                                 if whileStatementStack.Count = 0 then
                                     raise <| NoEnclosingLoop()
@@ -147,7 +190,8 @@ type SymbolTable(program) as self =
                              | IdentifierExpression i -> addIdentifierMapping i
                              | FunctionCallExpression(_, args) -> List.iter scanExpression args
                              | ArraySizeExpression _
-                             | LiteralExpression _ -> ()
+                             | LiteralExpression _
+                             | UUIDExpression -> ()
         symbolScopeStack.Push()
         List.iter symbolScopeStack.AddDeclaration parameters
         scanCompoundStatement compoundStatement
@@ -167,7 +211,7 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
     let rec scanDeclaration = function
                               | FunctionDeclaration x -> scanFunctionDeclaration x
                               | _ -> ()
-    and scanFunctionDeclaration (functionReturnType, _, _, compoundStatement) =
+    and scanFunctionDeclaration (functionReturnType, _, _, compoundStatement, _) =
         let rec scanCompoundStatement (_, statements) = List.iter scanStatement statements
         and scanStatement =
             function
@@ -286,7 +330,8 @@ type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTabl
                             raise <| InvalidArguments i (index + 1) (l.ToString()) (r.ToString())
                     List.iteri2 checkTypesMatch argumentTypes parameterTypes
                     !/calledFunction.ReturnType
-                | ArraySizeExpression _ -> !/Int
+                | ArraySizeExpression _
+                | UUIDExpression -> !/Int
                 | LiteralExpression l -> match l with
                                          | BoolLiteral _ -> !/Bool
                                          | IntLiteral _ -> !/Int
