@@ -13,24 +13,64 @@ void main(void)
 {
 }
 "
-//int g1;
-//bool g2;
-
-//void main(int p1, bool p2)
-//{
-//    bool g2;
-//}
-
-//void helper(bool p1)
-//{
-//    int l1;
-//}
 let Code02 = @"
+int g1;
+bool g2;
 
-void main(int)
+void main(int p1, bool p2)
 {
+    bool g2;
 }
 
+void helper(bool p1)
+{
+    int l1;
+}
+"
+let Code03 = @"
+void main(void)
+{
+    __asm ""nop"";
+    __asm ""test:"";
+    __asm ""abk"";
+    __asm ""br test"";
+}
+"
+let Code04 = @"
+void main(void)
+{
+    int i;
+
+    i = 0;
+
+    while (i < 10)
+    {
+        printi(i);
+
+        i = i + 1;
+    }
+}
+"
+let Code05 = @"
+void main(void)
+{
+    int i;
+
+    for (i = 0; i < 9; i = i + 1)
+    {
+        printi(i);
+    }
+}
+"
+let Code06 = @"
+void main(void)
+{
+    for each (int k -> int v in io)
+    {
+        printi(k);
+        printi(v);
+    }
+}
 "
 
 let Tree01 = [

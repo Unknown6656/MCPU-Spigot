@@ -43,7 +43,7 @@ namespace MCPUCompiler
                                     let name = entry.FullName.ToLower().Replace('\\', '/').Trim('/')
                                     where name.StartsWith(OPCODE_PATH)
                                     let opcode = FetchOpcodeNumber(entry)
-                                    select (name.Replace(OPCODE_PATH, "").Replace(".class", ""), opcode > 0xffff ? null : opcode)).ToArray();
+                                    select (name.Replace(OPCODE_PATH, "").Replace(".class", ""), opcode <= 0xffff ? opcode : null)).ToArray();
 
                     using (Stream s = zip.GetEntry("plugin.yml").Open())
                     using (StreamReader sr = new StreamReader(s))
@@ -73,7 +73,7 @@ namespace MCPUCompiler
 
                     Print(from ins in instructions select $"    {(ins.Item2 is null ? "----: " : $"{ins.Item2.Value:x4}: ")}{ins.Item1}");
 
-                    string code = Core.Testing.Tests.Code02;
+                    string code = Core.Testing.Tests.Code04;
                     // string code = File.ReadAllText(dic["in"]);
                     CompilerResult result = cmp.Compile(code);
 
@@ -101,8 +101,10 @@ namespace MCPUCompiler
                     {
                         "The compiler could not compile the input file due to the follwing reason(s):".Print(Red);
 
-                        Print(result.Error.Split('\n'));
-                        Print("");
+                        result.Error.Split('\n').Print();
+#if DEBUG
+                        "".Print();
+#endif
                     }
                 }
 

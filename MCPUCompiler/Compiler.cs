@@ -30,7 +30,6 @@ namespace MCPUCompiler
 
         public void Dispose()
         {
-
         }
 
         public CompilerResult Compile(string code)
@@ -49,7 +48,23 @@ namespace MCPUCompiler
                 var emt = new Emitter(res);
                 var asm = emt.Merge();
                 var outp = emt.Generate(DoNotGenerateComments);
-                var acode = string.Join("\n", outp); // join, as some 'lines' can have line-breaks in themselves
+                var acode = string.Join("\n", outp).Split('\n'); // join is needed as some 'lines' can have line-breaks in themselves
+                int linenr = 1;
+
+                foreach (string line in acode)
+                {
+                    if (!line.Trim().StartsWith(";") && !line.Contains(':'))
+                    {
+                        string instr = line.Trim() + ' ';
+
+                        instr = instr.Substring(0, instr.IndexOf(' ')).ToLower();
+
+                        if (!InstructionSet.Any(i => i.Item1 == instr))
+                            throw Errors.CannotEmitInstruction(instr);
+                    }
+
+                    ++linenr;
+                }
 
                 funcs.Add(() =>
                 {
@@ -86,7 +101,7 @@ namespace MCPUCompiler
                     Program.Print(from _ in asm where !_.IsComment select _.ToString(), true);
                 });
 
-                return new CompilerResult(acode.Split('\n')) { Functions = funcs };
+                return new CompilerResult(acode) { Functions = funcs };
             }
 #if !FAIL_HARD
             catch (Exception ex)
@@ -115,6 +130,7 @@ namespace MCPUCompiler
 
         public static implicit operator CompilerResult(Exception ex)
         {
+#if DEBUG
             StringBuilder sb = new StringBuilder();
 
             while (ex != null)
@@ -129,6 +145,13 @@ namespace MCPUCompiler
                 Success = false,
                 Error = sb.ToString(),
             };
+#else
+            return new CompilerResult
+            {
+                Success = false,
+                Error = ex.Message,
+            };
+#endif
         }
     }
 }

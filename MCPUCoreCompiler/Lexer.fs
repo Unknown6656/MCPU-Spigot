@@ -17,7 +17,6 @@ let declarationList           = nterm<Declaration list>()
 let declaration               = nterm<Declaration>()
 let staticVariableDeclaration = nterm<VariableDeclaration>()
 let functionDeclaration       = nterm<FunctionDeclaration>()
-let varTypeSpec               = nterm<TypeSpec>()
 let typeSpec                  = nterm<TypeSpec>()
 let parameters                = nterm<Parameters>()
 let parameterList             = nterm<Parameters>()
@@ -68,16 +67,17 @@ let whileKeyword      = term @"while"
 let returnKeyword     = term @"return"
 let breakKeyword      = term @"break"
 let continueKeyword   = term @"continue"
+let eachKeyword       = term @"each"
 let thisKeyword       = term @"this"
 let haltKeyword       = term @"halt"
 let abkKeyword        = term @"abk"
 let forKeyword        = term @"for"
+let inKeyword         = term @"in"
 let untilKeyword      = term @"until"
 let sizeKeyword       = term @"length"
 let inlineKeyword     = term @"inline"
 let sizeofKeyword     = term @"sizeof"
 let asmKeyword        = term @"__asm"
-let voidKeyword       = term @"void"
 let plus              = term @"\+"
 let minus             = term @"-"
 let doubleMinus       = term @"--"
@@ -89,16 +89,17 @@ let colon             = term @":"
 let asterisk          = term @"\*"
 let doubleAsterisk    = term @"\*\*"
 let hat               = term @"^"
-let stringLiteral     = termf "\"[^\"]+\""                              (fun s -> s.Remove(s.Length - 1).Remove(0, 1))
-let ioLiteral         = termf @"(in|out)"                               (fun s -> BoolLiteral(s.ToLower() <> "in"))
-let intLiteral        = termf @"\d+"                                    (fun s -> IntLiteral(int32 s))
-let hexLiteral        = termf @"(0(x|X)[0-9a-fA-F]+|[0-9a-fA-F]+(h|H))" (fun s -> IntLiteral(System.Int32.Parse(s, NumberStyles.HexNumber)))
-let trueLiteral       = termf @"true"                                   (fun _ -> BoolLiteral true)
-let falseLiteral      = termf @"false"                                  (fun _ -> BoolLiteral false)
-let boolKeyword       = termf @"bool"                                   (fun _ -> Bool)
-let intKeyword        = termf @"int"                                    (fun _ -> Int)
-let identifier        = termf @"[a-zA-Z_][a-zA-Z_0-9]*"                 id
-let arridentifier     = termf @"(io|mem)"                               (fun s -> if s.ToLower() = "io" then IO else Memory)
+let stringLiteral     = termf "\"[^\"]+\""              (fun s -> s.Remove(s.Length - 1).Remove(0, 1))
+let ioLiteral         = termf @"(in|out)"               (fun s -> BoolLiteral(s.ToLower() <> "in"))
+let intLiteral        = termf @"\d+"                    (fun s -> IntLiteral(int32 s))
+let hexLiteral        = termf @"(0(x|X)[0-9a-fA-F]+)"   (fun s -> IntLiteral(System.Int32.Parse(s, NumberStyles.HexNumber)))
+let trueLiteral       = termf @"true"                   (fun _ -> BoolLiteral true)
+let falseLiteral      = termf @"false"                  (fun _ -> BoolLiteral false)
+let voidKeyword       = termf @"void"                   (fun _ -> Void)
+let boolKeyword       = termf @"bool"                   (fun _ -> Bool)
+let intKeyword        = termf @"int"                    (fun _ -> Int)
+let identifier        = termf @"[a-zA-Z_][a-zA-Z_0-9]*" id
+let arridentifier     = termf @"(io|mem)"               (fun s -> if s.ToLower() = "io" then IO else Memory)
 let openParen         = term @"\("
 let closeParen        = term @"\)"
 let openCurly         = term @"\{"
@@ -117,6 +118,7 @@ let openAngleEquals   = term @"<="
 let openAngle         = term @"<"
 let closeAngleEquals  = term @">="
 let closeAngle        = term @">"
+let pointer           = term @"->"
 let ampersand         = term @"&&?"
 let period            = term @"\."
 let uuidof            = term @"__uuidof"
@@ -164,6 +166,10 @@ let reduce5 (s : NonTerminalWrapper<'a>) a b c d e x = s.AddProduction(a, b, c, 
 let reduce6 (s : NonTerminalWrapper<'a>) a b c d e f x = s.AddProduction(a, b, c, d, e, f).SetReduceFunction x
 let reduce7 (s : NonTerminalWrapper<'a>) a b c d e f g x = s.AddProduction(a, b, c, d, e, f, g).SetReduceFunction x
 let reduce8 (s : NonTerminalWrapper<'a>) a b c d e f g h x = s.AddProduction(a, b, c, d, e, f, g, h).SetReduceFunction x
+let reduce9 (s : NonTerminalWrapper<'a>) a b c d e f g h i x = s.AddProduction(a, b, c, d, e, f, g, h, i).SetReduceFunction x
+let reduce10 (s : NonTerminalWrapper<'a>) a b c d e f g h i j x = s.AddProduction(a, b, c, d, e, f, g, h, i, j).SetReduceFunction x
+let reduce11 (s : NonTerminalWrapper<'a>) a b c d e f g h i j k x = s.AddProduction(a, b, c, d, e, f, g, h, i, j, k).SetReduceFunction x
+let reduce12 (s : NonTerminalWrapper<'a>) a b c d e f g h i j k l x = s.AddProduction(a, b, c, d, e, f, g, h, i, j, k, l).SetReduceFunction x
 let reducelist (listtype : NonTerminalWrapper<'a list>) separator element =
     reduce3 listtype listtype separator element (fun l _ e -> l @ [e])
     reduce1 listtype element (fun e -> [e])
@@ -179,13 +185,11 @@ reduceclist declarationList declaration
 reduce1 declaration staticVariableDeclaration GlobalVariableDeclaration
 reduce1 declaration functionDeclaration FunctionDeclaration
 
-reduce0 varTypeSpec boolKeyword
-reduce0 varTypeSpec intKeyword
+reduce0 typeSpec voidKeyword
+reduce0 typeSpec boolKeyword
+reduce0 typeSpec intKeyword
 
-reduce1 typeSpec voidKeyword (fun _ -> Void)
-reduce0 typeSpec varTypeSpec
-
-reduce3 staticVariableDeclaration varTypeSpec identifier semicolon (fun t i _ -> (t, i))
+reduce3 staticVariableDeclaration typeSpec identifier semicolon (fun t i _ -> t, i)
 reduce5 functionDeclaration typeSpec identifier openParen closeParen compoundStatement (fun t i _ _ c -> (t, i, [], c, false))
 reduce6 functionDeclaration typeSpec identifier openParen parameters closeParen compoundStatement (fun t i _ p _ c -> (t, i, p, c, false))
 reduce6 functionDeclaration inlineKeyword typeSpec identifier openParen closeParen compoundStatement (fun _ t i _ _ c -> (t, i, [], c, true))
@@ -196,7 +200,7 @@ reduce1 parameters voidKeyword (fun _ -> [])
 
 reducelist parameterList comma parameter
 
-reduce2 parameter varTypeSpec identifier (fun t i -> (t, i))
+reduce2 parameter typeSpec identifier (fun t i -> t, i)
 
 reduce0 optionalStatementList statementList
 reducef optionalStatementList (fun () -> [])
@@ -212,33 +216,104 @@ reduce1 statement continueStatement (fun _ -> ContinueStatement)
 reduce1 statement breakStatement (fun _ -> BreakStatement)
 reduce1 statement haltStatement (fun _ -> HaltStatement)
 reduce1 statement abkStatement (fun _ -> AbkStatement)
-reduce1 statement asmStatement InlineAssemblyStatement
+reduce1 statementList asmStatement (fun (s : string) -> s.Trim().Split([| '\r'; '\n' |], System.StringSplitOptions.RemoveEmptyEntries)
+                                                        |> Array.map (fun s -> InlineAssemblyStatement <| s.Trim())
+                                                        |> Array.toList)
 
 reduce2 expressionStatement expression semicolon (fun e _ -> Expression e)
 reduce1 expressionStatement semicolon (fun _ -> Nop)
 
-reduce4 compoundStatement openCurly optionalLocalDeclarations optionalStatementList closeCurly (fun _ l s _ -> (l, s))
-reduce8 compoundStatement forKeyword openParen expressionStatement expression semicolon expression closeParen statement (fun _ _ f t _ o _ s ->
-    (
-        [],
-        [
-            ExpressionStatement f
-            WhileStatement (
-                t,
-                CompoundStatement (
-                    [],
-                    [
-                        s
-                        (Expression >> ExpressionStatement) o
-                    ]
-                )
+let genforeach c i a s =
+    let max = { Identifier = sprintf "<>__m%A" System.DateTime.Now.Ticks }
+    let cnt = { Identifier = c }
+    let i = { Identifier = i }
+    [
+        Int, i.Identifier
+        Int, cnt.Identifier
+        Int, max.Identifier
+    ],
+    [
+        (ScalarAssignmentExpression >> Expression >> ExpressionStatement) (max, ArraySizeExpression a)
+        WhileStatement (
+            BinaryExpression (
+                IdentifierExpression cnt,
+                Less,
+                IdentifierExpression max
+            ),
+            CompoundStatement (
+                [],
+                [
+                    ExpressionStatement (
+                        Expression (
+                            ScalarAssignmentExpression (
+                                i,
+                                ArrayIdentifierExpression (
+                                    a,
+                                    IdentifierExpression cnt
+                                )
+                            )
+                        )
+                    )
+                    s
+                    ExpressionStatement (
+                        Expression (
+                            ScalarAssignmentOperatorExpression (
+                                cnt,
+                                Add,
+                                LiteralExpression (
+                                    IntLiteral 1
+                                )
+                            )
+                        )
+                    )
+                ]
             )
-        ]
-    )
+        )
+    ]
+
+reduce4 compoundStatement openCurly optionalLocalDeclarations optionalStatementList closeCurly (fun _ l s _ -> (l, s))
+reduce12 compoundStatement forKeyword openParen intKeyword identifier singleEquals expression semicolon expression semicolon expression closeParen statement (fun _ _ _ i _ f _ t _ o _ s ->
+    let i = { Identifier = i }
+    [
+        Int, i.Identifier
+    ],
+    [
+        (ScalarAssignmentExpression >> Expression >> ExpressionStatement) (i, f)
+        WhileStatement (
+            t,
+            CompoundStatement (
+                [],
+                [
+                    s
+                    (Expression >> ExpressionStatement) o
+                ]
+            )
+        )
+    ]
 )
+reduce8 compoundStatement forKeyword openParen expressionStatement expression semicolon expression closeParen statement (fun _ _ f t _ o _ s ->
+    [],
+    [
+        ExpressionStatement f
+        WhileStatement (
+            t,
+            CompoundStatement (
+                [],
+                [
+                    s
+                    (Expression >> ExpressionStatement) o
+                ]
+            )
+        )
+    ]
+)
+reduce12 compoundStatement forKeyword eachKeyword openParen intKeyword identifier pointer intKeyword identifier inKeyword arridentifier closeParen statement (fun _ _ _ _ k _ _ v _ a _ s -> genforeach k v a s)
+reduce10 compoundStatement forKeyword eachKeyword openParen identifier pointer identifier inKeyword arridentifier closeParen statement (fun _ _ _ k _ v _ a _ s -> genforeach k v a s)
+reduce9 compoundStatement forKeyword eachKeyword openParen intKeyword identifier inKeyword arridentifier closeParen statement (fun _ _ _ _ i _ a _ s -> genforeach (sprintf "<>__c%A" System.DateTime.Now.Ticks) i a s)
+reduce8 compoundStatement forKeyword eachKeyword openParen identifier inKeyword arridentifier closeParen statement (fun _ _ _ i _ a _ s -> genforeach (sprintf "<>__c%A" System.DateTime.Now.Ticks) i a s)
 
 reduce5 whileStatement untilKeyword openParen expression closeParen statement (fun _ _ e _ s -> (UnaryExpression(LogicalNegate, e), s))
-reduce5 whileStatement whileKeyword openParen expression closeParen statement (fun _ _ e _ s -> (e, s))
+reduce5 whileStatement whileKeyword openParen expression closeParen statement (fun _ _ e _ s -> e, s)
 reduce6 whileStatement forKeyword openParen semicolon semicolon closeParen statement (fun _ _ _ _ _ s -> (LiteralExpression(BoolLiteral true), s))
 
 reduce0 optionalLocalDeclarations localDeclarations
@@ -246,11 +321,11 @@ reducef optionalLocalDeclarations (fun () -> [])
 
 reduceclist localDeclarations localDeclaration
 
-reduce3 localDeclaration varTypeSpec identifier semicolon (fun t i _ -> (t, i))
+reduce3 localDeclaration typeSpec identifier semicolon (fun t i _ -> t, i)
 
 reduce6 ifStatement ifKeyword openParen expression closeParen statement optionalElseStatement (fun _ _ e _ s o -> (e, s, o))
 
-let elseStatementProduction = optionalElseStatement.AddProduction(elseKeyword, statement)
+let elseStatementProduction : ProductionWrapper<string, Statement, Statement option> = optionalElseStatement.AddProduction(elseKeyword, statement)
 let elseEpsilonProduction = optionalElseStatement.AddProduction()
 
 elseStatementProduction.SetReduceFunction (fun _ b -> Some b)
@@ -282,10 +357,10 @@ reduce1 binaryAssignOperator AssignShiftRight (fun _ -> Shr)
 reduce1 binaryAssignOperator AssignSubtract (fun _ -> Subtract)
 reduce1 binaryAssignOperator AssignXor (fun _ -> Xor)
 
+// reduce6 expression arridentifier openSquare expression closeSquare binaryAssignOperator expression (fun i _ n _ o e -> ArrayAssignmentOperatorExpression(i, n, o, e))
+// reduce3 expression identifier binaryAssignOperator expression (fun i o e -> ScalarAssignmentOperatorExpression({ Identifier = i}, o, e))
 reduce6 expression arridentifier openSquare expression closeSquare singleEquals expression (fun i _ n _ _ e -> ArrayAssignmentExpression(i, n, e))
 reduce3 expression identifier singleEquals expression (fun i _ e -> ScalarAssignmentExpression({ Identifier = i }, e))
-//reduce6 expression arridentifier openSquare expression closeSquare binaryAssignOperator expression (fun i _ n _ o e -> ArrayAssignmentOperatorExpression(i, n, o, e))
-//reduce3 expression identifier binaryAssignOperator expression (fun i o e -> ScalarAssignmentOperatorExpression({ Identifier = i}, o, e))
 reduce3 expression expression pipe expression (fun x _ y -> BinaryExpression(x, Or, y))
 reduce3 expression expression ampersand expression (fun x _ y -> BinaryExpression(x, And, y))
 reduce3 expression expression doubleEquals expression (fun x _ y -> BinaryExpression(x, Equal, y))
@@ -332,10 +407,10 @@ reduce1 unaryOperator doubleMinus (fun _ -> Decr)
 reduce1 unaryOperator doublePlus (fun _ -> Incr)
 reduce1 unaryOperator plus (fun _ -> Identity)
 reduce1 unaryOperator tilde (fun _ -> Not)
-reduce3 unaryOperator openParen varTypeSpec closeParen (fun _ v _ -> match v with
-                                                                     | Int -> IntCast
-                                                                     | Bool -> BoolCast
-                                                                     | _ -> raise CompilerASTError)
+//reduce3 unaryOperator openParen varTypeSpec closeParen (fun _ v _ -> match v with
+//                                                                     | Int -> IntCast
+//                                                                     | Bool -> BoolCast
+//                                                                     | _ -> raise CompilerASTError)
 
 reduce0 optionalArguments arguments
 reducef optionalArguments (fun () -> [])

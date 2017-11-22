@@ -84,6 +84,9 @@ type ASMMethod =
         Locals : ASMVariable list
         Body : ASMInstruction list
     }
+    override x.ToString() =
+        sprintf "(\n\tName: %s\n\tInlined: %A\n\tReturnType: %A\n\tParameters: %A\n\tLocals: %A\n\tBody: (\n\t%s)\n)"
+            x.Name x.IsInlined x.ReturnType x.Parameters x.Locals (String.concat "" [for i in x.Body -> "\t" + i.ToString() + "\n\t"])
 
 type ASMProgram =
     {
@@ -152,26 +155,6 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
                     [procbinop op]
                 ]) >> List.concat) expr
 
-    and procbinop x = match x with
-                      | SyntaxTree.Add -> Add
-                      | Equal -> Eq
-                      | NotEqual -> Neq
-                      | LessEqual -> Leq
-                      | Less -> Lt
-                      | GreaterEqual -> Geq
-                      | Greater -> Gt
-                      | Subtract -> Sub
-                      | Multiply -> Mul
-                      | Divide -> Div
-                      | Modulus -> Mod
-                      | Power -> Pow
-                      | SyntaxTree.Xor -> Xor
-                      | SyntaxTree.Shr -> Shr
-                      | SyntaxTree.Shl -> Shl
-                      | SyntaxTree.Ror -> Ror
-                      | SyntaxTree.Rol -> Rol
-                      | _ -> raise <| GeneratorError x
-
     and procunop x = match x with
                      | LogicalNegate ->
                         [
@@ -198,6 +181,26 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
                             Neq
                         ]
                      | _ -> raise <| GeneratorError x
+
+    and procbinop x = match x with
+                      | SyntaxTree.Add -> Add
+                      | Equal -> Eq
+                      | NotEqual -> Neq
+                      | LessEqual -> Leq
+                      | Less -> Lt
+                      | GreaterEqual -> Geq
+                      | Greater -> Gt
+                      | Subtract -> Sub
+                      | Multiply -> Mul
+                      | Divide -> Div
+                      | Modulus -> Mod
+                      | Power -> Pow
+                      | SyntaxTree.Xor -> Xor
+                      | SyntaxTree.Shr -> Shr
+                      | SyntaxTree.Shl -> Shl
+                      | SyntaxTree.Ror -> Ror
+                      | SyntaxTree.Rol -> Rol
+                      | _ -> raise <| GeneratorError x
 
     and procidentifierload i =
         match lookupScope i with
@@ -283,6 +286,7 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
                            ]
                        | UUIDExpression -> [[UUID]]
         )
+    
     and procstatm stm =
         [Comment <| "statement '"  + stm.ToString().Replace('\n', ' ') + "'"]
         @ List.concat (match stm with
@@ -292,10 +296,10 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
                                let isvoid = sares.ExpressionTypes.[x].Type = Void
                                [
                                    procexpr x
-                                   (if isvoid then [Pop] else [])
+                                   (if isvoid then [] else [Pop])
                                ]
                            | Nop -> []
-                       | CompoundStatement(_, s) -> [List.collect procstatm s]
+                       | CompoundStatement(_, s) -> List.map procstatm s
                        | InlineAssemblyStatement r -> [[Raw r]]
                        | IfStatement(c, s1, Some s2) ->
                            let thenlabel = mklabel()
@@ -349,7 +353,8 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
 
     let procvardecl (mi : byref<_>) f d =
         let var = CreateASMVariable d
-        mapping.Add(d, f mi)
+        let scope = f mi
+        mapping.Add(d, scope)
         mi <- mi + 1s
         var
 
@@ -359,23 +364,21 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
     
     let rec collectlocdecl stm =
         let constrvar expr =
-            let var = {
-                        ASMVariable.Name = sprintf "________tmp_0x%016x" locindex
-                    }
+            let var = { ASMVariable.Name = sprintf "________tmp_0x%016x" locindex }
             arrassgnloc.Add(expr, locindex)
             locindex <- locindex + 1s
             var
 
         let rec fromexpr = function
-                       | ScalarAssignmentExpression(_, e) -> fromexpr e
-                       | ArrayAssignmentOperatorExpression(_, n, _, e) as ae -> (fromexpr n)@[constrvar ae]@(fromexpr e)
-                       | ArrayAssignmentExpression(_, n, e) as ae -> (fromexpr n)@[constrvar ae]@(fromexpr e)
-                       | BinaryExpression(l, _, r) -> (fromexpr l)@(fromexpr r)
-                       | TernaryExpression(c, t, f) -> List.collect fromexpr [c;t;f]
-                       | ArrayIdentifierExpression(_, e)
-                       | UnaryExpression(_, e) -> fromexpr e
-                       | FunctionCallExpression(_, a) -> List.collect fromexpr a
-                       | _ -> []
+                           | ScalarAssignmentExpression(_, e) -> fromexpr e
+                           | ArrayAssignmentOperatorExpression(_, n, _, e) as ae -> (fromexpr n)@[constrvar ae]@(fromexpr e)
+                           | ArrayAssignmentExpression(_, n, e) as ae -> (fromexpr n)@[constrvar ae]@(fromexpr e)
+                           | BinaryExpression(l, _, r) -> (fromexpr l)@(fromexpr r)
+                           | TernaryExpression(c, t, f) -> List.collect fromexpr [c;t;f]
+                           | ArrayIdentifierExpression(_, e)
+                           | UnaryExpression(_, e) -> fromexpr e
+                           | FunctionCallExpression(_, a) -> List.collect fromexpr a
+                           | _ -> []
 
         let fromstat stm =
             match stm with
@@ -418,7 +421,7 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
         }
 
 type ASMBuilder (sares : SemanticAnalysisResult) =
-    let varmap = VariableMappingDictionary HashIdentity.Reference
+    let varmap = VariableMappingDictionary HashIdentity.Structural
 
     let procstatvardecl d =
         let v = CreateASMVariable d
@@ -426,7 +429,7 @@ type ASMBuilder (sares : SemanticAnalysisResult) =
         v
 
     let procfuncdecl =
-        let asmbuilder = ASMMethodBuilder (sares, varmap)
+        let asmbuilder = ASMMethodBuilder(sares, varmap)
         asmbuilder.BuildMethod
 
     member __.VariableMap = varmap
@@ -497,9 +500,17 @@ type ASMBuilder (sares : SemanticAnalysisResult) =
                                                | GlobalVariableDeclaration x -> Some x
                                                | _ -> None) 
                       |> List.map procstatvardecl
-            Methods = builtin @ (prog
-                                 |> List.choose (fun x -> match x with
-                                                                  | FunctionDeclaration a -> Some a
-                                                                  | _ -> None)
-                                 |> List.map procfuncdecl)
+            Methods =
+                let methods = prog
+                              |> List.choose (fun x -> match x with
+                                                       | FunctionDeclaration a -> Some a
+                                                       | _ -> None)
+                              |> List.map procfuncdecl
+                let containscall target =
+                    List.exists (function
+                                 | Call (n, _) as f -> printf "%A" f; n = target.Name
+                                 | _ -> false)
+                (builtin
+                 |> List.filter (fun b -> List.exists (fun f -> containscall b f.Body) methods)
+                ) @ methods
         }

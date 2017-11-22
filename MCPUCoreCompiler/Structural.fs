@@ -138,7 +138,6 @@ type LocalDeclarations = VariableDeclaration list
 type Statement =
     | ExpressionStatement of ExpressionStatement
     | CompoundStatement of CompoundStatement
-  //| ForStatement of ForStatement
     | IfStatement of IfStatement
     | WhileStatement of WhileStatement
     | ReturnStatement of Expression option
@@ -168,7 +167,6 @@ type Statement =
 and CompoundStatement = LocalDeclarations * Statement list
 and IfStatement = Expression * Statement * Statement option
 and WhileStatement = Expression * Statement
-//and ForStatement = ExpressionStatement * Expression * ExpressionStatement * Statement
 type FunctionDeclaration = TypeSpec * Identifier * Parameters * CompoundStatement * bool
 type Declaration =
     | GlobalVariableDeclaration of VariableDeclaration

@@ -45,10 +45,11 @@ type internal SymbolScope(parent : SymbolScope option) =
     let declaresIdentifier (identifierRef : IdentifierRef) declaration =
         snd declaration = identifierRef.Identifier
 
-    member x.AddDeclaration declaration =
-        if List.exists (fun x -> snd x = snd declaration) list then
-            raise (VariableAlreadyDefined (snd declaration))
-        list <- declaration :: list
+    member x.AddDeclaration decl =
+        if List.exists (fun x -> snd x = snd decl) list then
+            raise <| VariableAlreadyDefined (snd decl)
+        else
+            list <- decl :: list
 
     member x.FindDeclaration id =
         let found = List.tryFind (declaresIdentifier id) list
@@ -59,7 +60,7 @@ type internal SymbolScope(parent : SymbolScope option) =
                   | None -> raise <| NameDoesNotExist id.Identifier
 
 type internal SymbolScopeStack() =
-    let stack = Stack<SymbolScope> ()
+    let stack = Stack<SymbolScope>()
     do
         stack.Push(SymbolScope None)
 
@@ -102,7 +103,7 @@ type FunctionTable(program) as self =
 
     let rec scanDeclaration =
         function
-        | GlobalVariableDeclaration x -> ()
+        | GlobalVariableDeclaration _ -> ()
         | FunctionDeclaration (t, i, p, b, l) ->
             if self.ContainsKey i then
                 raise <| FunctionAlreadyDefined i
@@ -111,7 +112,7 @@ type FunctionTable(program) as self =
                     if containscall b then
                         raise <| CannotBeInlined i
                     elif i = EntryPointName then
-                        raise <| MainCannotBeInlined
+                        raise <| MainCannotBeInlined EntryPointName
                         
                 self.Add(i, {
                                 IsInlined = l
@@ -169,6 +170,7 @@ type SymbolTable(program) as self =
                             | AbkStatement
                             | InlineAssemblyStatement _ -> ()
         and addIdentifierMapping i =
+            printf "added mapping. %A %08x  --->  %A %08x\n" i (i.GetHashCode()) (symbolScopeStack.CurrentScope.FindDeclaration i) ((symbolScopeStack.CurrentScope.FindDeclaration i).GetHashCode())
             self.Add(i, symbolScopeStack.CurrentScope.FindDeclaration i)
         and scanExpression = function
                              | ScalarAssignmentExpression(i, e)
@@ -196,14 +198,18 @@ type SymbolTable(program) as self =
         List.iter symbolScopeStack.AddDeclaration parameters
         scanCompoundStatement compoundStatement
         symbolScopeStack.Pop()
-        
+
     do
         // add symbols 'io' and 'mem' ?
         List.iter scanDeclaration program
     
     member x.Program = program
 
-    member x.GetIdentifierTypeSpec identifierRef = DeclarationType self.[identifierRef]
+    member x.GetIdentifierTypeSpec id = DeclarationType self.[id]
+    
+
+///////////////////////////////////////////// VERIFIED THE CODE ABOVE /////////////////////////////////////////////
+
 
 type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTable : SymbolTable) as self =
     inherit Dictionary<Expression, VariableType>(HashIdentity.Reference)
@@ -356,8 +362,8 @@ type SemanticAnalysisResult =
 let Analyze program =
     let symbolTable = SymbolTable program
     let functionTable = FunctionTable program
-    if not (functionTable.ContainsKey "main") then
-        raise <| MissingEntryPoint()
+    if not (functionTable.ContainsKey EntryPointName) then
+        raise <| MissingEntryPoint EntryPointName
     else
         let expressionTypes = ExpressionTypeDictionary(program, functionTable, symbolTable)
         {

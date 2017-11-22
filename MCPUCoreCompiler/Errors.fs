@@ -16,7 +16,7 @@ module Errors =
     let private replwsp s = Regex.Replace(s, @"(\s+|\r|\n)", " ").Trim();
 
     let LexerError (e : LexerException) =        1/>>(sprintf "Lexing error: %s near '%s' on line %d." (replwsp e.Message) (e.LineContents) (e.LineNumber), e)
-    let ParserError (e : ParseException) =       2/>>(sprintf "Parsing error: %s. Expected [%A], got [%A] on line %d near '%s'." (replwsp e.Message) (e.ExpectedTokens) (e.FoundToken) (e.LexerState.CurrentLineNumber) (replwsp e.LexerState.LastLexeme), e)
+    let ParserError (e : ParseException) =       2/>>(sprintf "Parsing error: %s near '%s' on line %d." (replwsp e.Message) (* (e.FoundToken) (e.ExpectedTokens) *) (replwsp e.LexerState.LastLexeme) (e.LexerState.CurrentLineNumber), e)
     let VariableAlreadyDefined a =               3/>sprintf "A variable named '%s' is already defined in this scope." a
     let CannotConvertType (a : VariableType) (b : VariableType) =
                                                  4/>sprintf "Cannot convert type '%A' to '%A'" a b
@@ -32,9 +32,11 @@ module Errors =
     let NoEnclosingLoop() =                      12/>"No enclosing loop out of which to break or continue."
     let CannotApplyIndexing (a : VariableType) = 13/>sprintf "Cannot apply indexing with [] to an expression of type '%A'." a
     let FunctionAlreadyDefined a =               14/>sprintf "A function named '%s' is already defined." a
-    let MissingEntryPoint() =                    15/>"Program does not contain a 'main' method suitable for an entry point."
+    let MissingEntryPoint a =                    15/>sprintf"Program does not contain a '%s' method suitable for an entry point." a
     let GeneralError (a : exn) =                 16/>>("A compiler error occured.", a)
     let CompilerASTError =                       17/>"The abstract syntax tree could not be built."
     let GeneratorError x =                       18/>sprintf "The assembly instruction could not be generated for the following object: %A." x
-    let MainCannotBeInlined =                    19/>"The function 'main' cannot be inlined as it is the entry point function."
+    let MainCannotBeInlined a =                  19/>sprintf "The function '%s' cannot be inlined as it is the entry point function." a
     let CannotBeInlined a =                      20/>sprintf "The function '%s' cannot be inlined as it contains an other function call." a
+    let CannotEmitInstruction a =                21/>sprintf "The compiler was unable to emit the instruction '%s' as it is not defined in the given .jar file." a
+    
