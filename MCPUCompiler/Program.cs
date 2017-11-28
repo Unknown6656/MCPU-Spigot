@@ -12,7 +12,7 @@ using MCPUCompiler.Properties;
 
 using static System.ConsoleColor;
 using static System.Console;
-
+using static MCPUCompiler.Core.Compiler;
 
 namespace MCPUCompiler
 {
@@ -65,16 +65,23 @@ namespace MCPUCompiler
             {
                 "The given .jar file does not seem to contain a valid MCPU Minecraft plugin.".Print(Red);
             }
-            
+
+            ASMCommentLevel lvl = ASMCommentLevel.NoComments;
+
+            if (int.TryParse(dic["comment-level"], out int cmtlvl))
+                lvl = cmtlvl <= 0 ? ASMCommentLevel.NoComments
+                    : cmtlvl == 1 ? ASMCommentLevel.CommentExpressions
+                    : cmtlvl == 2 ? ASMCommentLevel.CommentStatementsAndExpressions
+                    : cmtlvl == 3 ? ASMCommentLevel.CommentInstructions : ASMCommentLevel.CommentAll;
+
             if (instructions != null)
-                using (Compiler cmp = new Compiler(instructions, dic.ContainsKey("nocomments")))
+                using (Compiler cmp = new Compiler(instructions, lvl))
                 {
                     "Instructions provided by the .jar file:".Print();
 
                     Print(from ins in instructions select $"    {(ins.Item2 is null ? "----: " : $"{ins.Item2.Value:x4}: ")}{ins.Item1}");
-
-                    string code = Core.Testing.Tests.Code04;
-                    // string code = File.ReadAllText(dic["in"]);
+                    
+                    string code = File.ReadAllText(dic["in"]);
                     CompilerResult result = cmp.Compile(code);
 
                     "Loaded the following source code:".Print(Cyan);
@@ -210,10 +217,10 @@ namespace MCPUCompiler
 Usage:
     {AssemblyName} options
 Options:
-    -in=...         Input code file
-    -jar=...        The MCPUPlugin .jar-file
-    -out=...        The output .asm file
-    -no-comments    The output .asm file will not contain any code comments
+    --in=...            Input code file
+    --jar=...           The MCPUPlugin .jar-file
+    --out=...           The output .asm file
+    --comment-level=... The comment level in the output assembly file (integer value from 0 to 4)
 ".Print();
 
         internal static void Print(this IEnumerable<string> s, bool linenumbers = false, ConsoleColor c = White)

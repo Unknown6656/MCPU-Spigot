@@ -18,7 +18,8 @@ type Emitter (prog : ASMProgram) =
         let func = prog.Methods
         let fdic = dict [for f in func -> f.Name, (nextlabel(), f)]
         let toasm (f : ASMMethod) =
-            let mutable loccnt = f.Locals.Length
+            let mutable firstregloc = true
+            let mutable loccnt = f.Parameters.Length
             let body = List.collect (fun ins -> match ins with
                                                 | Call (f, n) ->
                                                     let target = fdic.[f]
@@ -29,22 +30,32 @@ type Emitter (prog : ASMProgram) =
                                                                                         | Ret -> false
                                                                                         | _ -> true)
                                                         [
+                                                            Comment(ASMCommentLevel.CommentStatementsAndExpressions, sprintf "begin of inlining '%s' ..." (snd target).Signature)
                                                             // TODO
-                                                        ] @ body
+                                                            
+                                                        ]
+                                                        @ body
+                                                        @ [Comment(ASMCommentLevel.CommentStatementsAndExpressions, sprintf "end of inlining '%s'."  (snd target).Signature)]
                                                     else
                                                         [Call (sprintf "%d" (fst target), n)]
                                                  | Regloc n ->
-                                                    loccnt <- loccnt + n
-                                                    []
+                                                    if n > loccnt then
+                                                        loccnt <- loccnt + n
+
+                                                    if firstregloc then
+                                                        firstregloc <- false
+                                                        []
+                                                    else
+                                                        List.collect (fun x -> [Ldc 0; Starg x]) [0s..int16 n]
                                                  | _ -> [ins]) f.Body
             
             [
-                Comment <| sprintf "function '%s'" f.Name
+                Comment(ASMCommentLevel.CommentStatementsAndExpressions, sprintf "function '%s'" f.Signature)
                 Label <| fst fdic.[f.Name]
                 Regloc loccnt
             ] @ body @ [
                 Ret
-                Comment <| sprintf "end of function '%s'" f.Name
+                Comment(ASMCommentLevel.CommentStatementsAndExpressions, sprintf "end of function '%s'" f.Signature)
             ]
         [
             Regglob glob.Length
@@ -57,12 +68,23 @@ type Emitter (prog : ASMProgram) =
             |> List.concat
         )
     
-    member x.Generate b = 
+    member x.Generate level = 
         x.Merge()
-        |> List.filter (fun x -> if b then match x with
-                                           | Comment _ -> false
-                                           | _ -> true
-                                 else true)
+        |> List.collect (fun l -> match l with
+                                  | Comment _ -> [l]
+                                  | _ -> [
+                                             Comment(ASMCommentLevel.CommentInstructions, l.DescriptionString)
+                                             l
+                                         ])
+        |> List.filter (fun x -> match level, x with
+                                 | x, Comment(y, _) when x = y -> true
+                                 | ASMCommentLevel.CommentAll, _
+                                 | ASMCommentLevel.CommentStatementsAndExpressions, Comment(ASMCommentLevel.CommentExpressions, _) -> true
+                                 | _, Comment _ -> false
+                                 | _ -> true)
+        |> List.filter (fun x -> match x with
+                                 | Comment(_, s) -> if s = null then false else s.Trim().Length > 0
+                                 | _ -> true)
         |> List.map (function
                     | Abk -> "abk"
                     | Abs -> "abs"
@@ -124,6 +146,10 @@ type Emitter (prog : ASMProgram) =
                     | Syscall i -> sprintf "syscall %xh" i
                     | UUID -> "uuid"
                     | Xor -> "xor"
-                    | Comment s -> "; " + s)
+                    | Comment(l, s) -> sprintf "; %s: %s" (match l with
+                                                           | ASMCommentLevel.CommentExpressions -> "EXP"
+                                                           | ASMCommentLevel.CommentStatementsAndExpressions -> "STM"
+                                                           | ASMCommentLevel.CommentInstructions -> "INS"
+                                                           | _ -> "ALL") s)
         |> List.toArray
         

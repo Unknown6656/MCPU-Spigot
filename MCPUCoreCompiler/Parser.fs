@@ -13,7 +13,7 @@ type FunctionTableEntry =
    
 let EntryPointName = "main"
 let (!/) t = { Type = t; IsArray = false }
-let (|Scalar|_|) (t : VariableType) = if t.IsArray then Some t.Type else None
+let (|Scalar|_|) (t : VariableType) = if t.IsArray then None else Some t.Type
 let (|Sbool|_|) (t : VariableType) = if t = !/Bool then Some () else None
 let (|Sint|_|) (t : VariableType) = if t = !/Int then Some () else None
 let DeclarationType : VariableDeclaration -> VariableType = fst >> (!/)
@@ -170,8 +170,10 @@ type SymbolTable(program) as self =
                             | AbkStatement
                             | InlineAssemblyStatement _ -> ()
         and addIdentifierMapping i =
-            printf "added mapping. %A %08x  --->  %A %08x\n" i (i.GetHashCode()) (symbolScopeStack.CurrentScope.FindDeclaration i) ((symbolScopeStack.CurrentScope.FindDeclaration i).GetHashCode())
-            self.Add(i, symbolScopeStack.CurrentScope.FindDeclaration i)
+            if self.ContainsKey i then
+                raise <| VariableAlreadyDefined i.Identifier
+            else
+                self.Add(i, symbolScopeStack.CurrentScope.FindDeclaration i)
         and scanExpression = function
                              | ScalarAssignmentExpression(i, e)
                              | ScalarAssignmentOperatorExpression(i, _, e) ->
@@ -207,10 +209,6 @@ type SymbolTable(program) as self =
 
     member x.GetIdentifierTypeSpec id = DeclarationType self.[id]
     
-
-///////////////////////////////////////////// VERIFIED THE CODE ABOVE /////////////////////////////////////////////
-
-
 type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTable : SymbolTable) as self =
     inherit Dictionary<Expression, VariableType>(HashIdentity.Reference)
 

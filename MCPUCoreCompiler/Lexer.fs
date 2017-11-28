@@ -6,6 +6,11 @@ open SyntaxTree
 open Util
 
 
+let mutable private __tmpindex = 0UL
+let nextTempVar () =
+    __tmpindex <- __tmpindex + 1UL
+    sprintf "___tmp<>_%016x" __tmpindex
+
 let conf = ParserFactory.Configure<obj>()
 let nterm<'T> () = NonTerminalWrapper<'T> (conf.CreateNonTerminal())
 let termf<'T> regex (onParse : (string -> 'T)) = TerminalWrapper<'T> (conf.CreateTerminal(regex, (fun s -> box (onParse s))))
@@ -50,8 +55,8 @@ let AssignRotateLeft  = term @"<<<="
 let AssignShiftLeft   = term @"<<="
 let AssignAdd         = term @"\+="
 let AssignSubtract    = term @"-="
-let AssignMultiply    = term @"\*="
 let AssignPower       = term @"\*\*="
+let AssignMultiply    = term @"\*="
 let AssignDivide      = term @"/="
 let AssignModulo      = term @"%="
 let AssignOr          = term @"\|\|?="
@@ -61,45 +66,18 @@ let rotateRight       = term @">>>"
 let shiftRight        = term @">>"
 let rotateLeft        = term @"<<<"
 let shiftLeft         = term @"<<"
-let ifKeyword         = term @"if"
-let elseKeyword       = term @"else"
-let whileKeyword      = term @"while"
-let returnKeyword     = term @"return"
-let breakKeyword      = term @"break"
-let continueKeyword   = term @"continue"
-let eachKeyword       = term @"each"
-let thisKeyword       = term @"this"
-let haltKeyword       = term @"halt"
-let abkKeyword        = term @"abk"
-let forKeyword        = term @"for"
-let inKeyword         = term @"in"
-let untilKeyword      = term @"until"
-let sizeKeyword       = term @"length"
-let inlineKeyword     = term @"inline"
-let sizeofKeyword     = term @"sizeof"
-let asmKeyword        = term @"__asm"
-let plus              = term @"\+"
-let minus             = term @"-"
-let doubleMinus       = term @"--"
+let pointer           = term @"->"
 let doublePlus        = term @"\+\+"
+let plus              = term @"\+"
+let doubleMinus       = term @"--"
+let minus             = term @"-"
 let tilde             = term @"~"
 let exclamation       = term @"!"
 let questionmark      = term @"\?"
 let colon             = term @":"
-let asterisk          = term @"\*"
 let doubleAsterisk    = term @"\*\*"
+let asterisk          = term @"\*"
 let hat               = term @"^"
-let stringLiteral     = termf "\"[^\"]+\""              (fun s -> s.Remove(s.Length - 1).Remove(0, 1))
-let ioLiteral         = termf @"(in|out)"               (fun s -> BoolLiteral(s.ToLower() <> "in"))
-let intLiteral        = termf @"\d+"                    (fun s -> IntLiteral(int32 s))
-let hexLiteral        = termf @"(0(x|X)[0-9a-fA-F]+)"   (fun s -> IntLiteral(System.Int32.Parse(s, NumberStyles.HexNumber)))
-let trueLiteral       = termf @"true"                   (fun _ -> BoolLiteral true)
-let falseLiteral      = termf @"false"                  (fun _ -> BoolLiteral false)
-let voidKeyword       = termf @"void"                   (fun _ -> Void)
-let boolKeyword       = termf @"bool"                   (fun _ -> Bool)
-let intKeyword        = termf @"int"                    (fun _ -> Int)
-let identifier        = termf @"[a-zA-Z_][a-zA-Z_0-9]*" id
-let arridentifier     = termf @"(io|mem)"               (fun s -> if s.ToLower() = "io" then IO else Memory)
 let openParen         = term @"\("
 let closeParen        = term @"\)"
 let openCurly         = term @"\{"
@@ -110,18 +88,47 @@ let semicolon         = term @";"
 let comma             = term @","
 let percent           = term @"%"
 let forwardSlash      = term @"/"
-let singleEquals      = term @"="
-let pipe              = term @"\|\|?"
 let doubleEquals      = term @"=="
+let singleEquals      = term @"="
 let notEquals         = term @"!="
 let openAngleEquals   = term @"<="
 let openAngle         = term @"<"
 let closeAngleEquals  = term @">="
 let closeAngle        = term @">"
-let pointer           = term @"->"
+let pipe              = term @"\|\|?"
 let ampersand         = term @"&&?"
 let period            = term @"\."
+let newline           = term @"\n"
+let ifKeyword         = term @"if"
+let elseKeyword       = term @"else"
+let whileKeyword      = term @"while"
+let returnKeyword     = term @"return"
+let breakKeyword      = term @"break"
+let continueKeyword   = term @"continue"
+let eachKeyword       = term @"each"
+let thisKeyword       = term @"this"
+let haltKeyword       = term @"halt"
+let abkKeyword        = term @"abk"
+let letKeyword        = term @"let"
+let forKeyword        = term @"for"
+let inKeyword         = term @"in"
+let untilKeyword      = term @"until"
+let sizeKeyword       = term @"length"
+let inlineKeyword     = term @"inline"
+let sizeofKeyword     = term @"sizeof"
+let asmKeyword        = term @"__asm"
 let uuidof            = term @"__uuidof"
+let ioLiteral         = termf @"(in|out)"               (fun s -> BoolLiteral(s.ToLower() <> "in"))
+let hexLiteral        = termf @"(0(x|X)[0-9a-fA-F]+)"   (fun s -> IntLiteral(System.Int32.Parse(s, NumberStyles.HexNumber)))
+let intLiteral        = termf @"\d+"                    (fun s -> IntLiteral(int32 s))
+let trueLiteral       = termf @"true"                   (fun _ -> BoolLiteral true)
+let falseLiteral      = termf @"false"                  (fun _ -> BoolLiteral false)
+let voidKeyword       = termf @"void"                   (fun _ -> Void)
+let boolKeyword       = termf @"bool"                   (fun _ -> Bool)
+let intKeyword        = termf @"int"                    (fun _ -> Int)
+let arridentifier     = termf @"(io|mem)"               (fun s -> if s.ToLower() = "io" then IO else Memory)
+let stringLiteral     = termf "\"[^\"]+\""              (fun s -> s.Remove(s.Length - 1).Remove(0, 1).Trim())
+let identifier        = termf @"[a-zA-Z_][a-zA-Z_0-9]*" id
 
 
 type OpetatorAssociativity = Left | Right
@@ -176,6 +183,13 @@ let reducelist (listtype : NonTerminalWrapper<'a list>) separator element =
 let reduceclist (listtype : NonTerminalWrapper<'a list>) element =
     reduce2 listtype listtype element (fun l e -> l @ [e])
     reduce1 listtype element (fun e -> [e])
+    
+// TODO : FIX __asm STATEMENTS
+// TODO : ADD VAR DECLS AS FOLLOWS:
+//               var : int;
+//               var : bool;
+
+
 
 
 reduce0 program declarationList
@@ -189,11 +203,17 @@ reduce0 typeSpec voidKeyword
 reduce0 typeSpec boolKeyword
 reduce0 typeSpec intKeyword
 
+//reduce3 staticVariableDeclaration typeSpec identifier newline (fun t i _ -> t, i)
 reduce3 staticVariableDeclaration typeSpec identifier semicolon (fun t i _ -> t, i)
+//reduce5 staticVariableDeclaration letKeyword identifier colon typeSpec newline (fun _ i _ t _ -> t, i)
+reduce5 staticVariableDeclaration letKeyword identifier colon typeSpec semicolon (fun _ i _ t _ -> t, i)
 reduce5 functionDeclaration typeSpec identifier openParen closeParen compoundStatement (fun t i _ _ c -> (t, i, [], c, false))
 reduce6 functionDeclaration typeSpec identifier openParen parameters closeParen compoundStatement (fun t i _ p _ c -> (t, i, p, c, false))
 reduce6 functionDeclaration inlineKeyword typeSpec identifier openParen closeParen compoundStatement (fun _ t i _ _ c -> (t, i, [], c, true))
 reduce7 functionDeclaration inlineKeyword typeSpec identifier openParen parameters closeParen compoundStatement (fun _ t i _ p _ c -> (t, i, p, c, true))
+// functional function declaration
+reduce6 functionDeclaration identifier colon parameters pointer typeSpec compoundStatement (fun i _ p _ t c -> (t, i, p, c, false))
+reduce7 functionDeclaration inlineKeyword identifier colon parameters pointer typeSpec compoundStatement (fun _ i _ p _ t c -> (t, i, p, c, true))
 
 reduce0 parameters parameterList
 reduce1 parameters voidKeyword (fun _ -> [])
@@ -223,8 +243,8 @@ reduce1 statementList asmStatement (fun (s : string) -> s.Trim().Split([| '\r'; 
 reduce2 expressionStatement expression semicolon (fun e _ -> Expression e)
 reduce1 expressionStatement semicolon (fun _ -> Nop)
 
-let genforeach c i a s =
-    let max = { Identifier = sprintf "<>__m%A" System.DateTime.Now.Ticks }
+let genforeach c i a s : CompoundStatement =
+    let max = { Identifier = nextTempVar() }
     let cnt = { Identifier = c }
     let i = { Identifier = i }
     [
@@ -309,8 +329,8 @@ reduce8 compoundStatement forKeyword openParen expressionStatement expression se
 )
 reduce12 compoundStatement forKeyword eachKeyword openParen intKeyword identifier pointer intKeyword identifier inKeyword arridentifier closeParen statement (fun _ _ _ _ k _ _ v _ a _ s -> genforeach k v a s)
 reduce10 compoundStatement forKeyword eachKeyword openParen identifier pointer identifier inKeyword arridentifier closeParen statement (fun _ _ _ k _ v _ a _ s -> genforeach k v a s)
-reduce9 compoundStatement forKeyword eachKeyword openParen intKeyword identifier inKeyword arridentifier closeParen statement (fun _ _ _ _ i _ a _ s -> genforeach (sprintf "<>__c%A" System.DateTime.Now.Ticks) i a s)
-reduce8 compoundStatement forKeyword eachKeyword openParen identifier inKeyword arridentifier closeParen statement (fun _ _ _ i _ a _ s -> genforeach (sprintf "<>__c%A" System.DateTime.Now.Ticks) i a s)
+reduce9 compoundStatement forKeyword eachKeyword openParen intKeyword identifier inKeyword arridentifier closeParen statement (fun _ _ _ _ i _ a _ s -> genforeach (nextTempVar()) i a s)
+reduce8 compoundStatement forKeyword eachKeyword openParen identifier inKeyword arridentifier closeParen statement (fun _ _ _ i _ a _ s -> genforeach (nextTempVar()) i a s)
 
 reduce5 whileStatement untilKeyword openParen expression closeParen statement (fun _ _ e _ s -> (UnaryExpression(LogicalNegate, e), s))
 reduce5 whileStatement whileKeyword openParen expression closeParen statement (fun _ _ e _ s -> e, s)
@@ -322,6 +342,10 @@ reducef optionalLocalDeclarations (fun () -> [])
 reduceclist localDeclarations localDeclaration
 
 reduce3 localDeclaration typeSpec identifier semicolon (fun t i _ -> t, i)
+//reduce4 localDeclaration identifier colon typeSpec newline (fun i _ t _ -> t, i)
+//reduce4 localDeclaration identifier colon typeSpec semicolon (fun i _ t _ -> t, i)
+//reduce5 localDeclaration letKeyword identifier colon typeSpec newline (fun _ i _ t _ -> t, i)
+reduce5 localDeclaration letKeyword identifier colon typeSpec semicolon (fun _ i _ t _ -> t, i)
 
 reduce6 ifStatement ifKeyword openParen expression closeParen statement optionalElseStatement (fun _ _ e _ s o -> (e, s, o))
 
@@ -342,6 +366,7 @@ reduce2 breakStatement breakKeyword semicolon (fun _ _ -> ())
 reduce2 haltStatement haltKeyword semicolon (fun _ _ -> ())
 reduce2 abkStatement abkKeyword semicolon (fun _ _ -> ())
 reduce3 asmStatement asmKeyword stringLiteral semicolon (fun _ a _ -> a)
+reduce5 asmStatement asmKeyword openParen stringLiteral closeParen semicolon (fun _ _ a _ _ -> a)
 
 reduce1 binaryAssignOperator AssignAdd (fun _ -> Add)
 reduce1 binaryAssignOperator AssignAnd (fun _ -> And)

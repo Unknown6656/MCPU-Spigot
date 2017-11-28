@@ -12,8 +12,15 @@ type ASMVariable =
         Name : string
     }
 
+type ASMCommentLevel =
+    | NoComments = 0
+    | CommentExpressions = 1
+    | CommentStatementsAndExpressions = 2
+    | CommentInstructions = 3
+    | CommentAll = 4
+
 type ASMInstruction =
-    | Comment of string
+    | Comment of ASMCommentLevel * string
     | Abk
     | Abs
     | Add
@@ -74,6 +81,69 @@ type ASMInstruction =
     | Syscall of int
     | UUID
     | Xor
+    member x.DescriptionString =
+        let (!@) = sprintf
+        function
+        | Abs -> "Takes the top-most stack value and returns its absolute interger part."
+        | Add -> "Calculate the addition of the two top-most stack values and push the result back onto the stack."
+        | And -> "Calculate the binary AND-combination of the two top-most stack values and push the result back onto the stack."
+        | Br l -> !@"Jump to the label '%016x'." l
+        | Brtrue l -> !@"Jump to the label '%016x' if the top-most stack value is not equal to zero." l
+        | Brfalse l -> !@"Jump to the label '%016x' if the top-most stack value is equal to zero." l
+        | Call(s, i) -> !@"Call the function '%s' and pass the %d top-most stack values as call arguments." s i
+        | Div -> "Calculate the division of the two top-most stack values and push the result back onto the stack."
+        | Dup -> "Duplicate the top-most stack value."
+        | Eq -> "Compare whether the two top-most stack values are equal and push the comparison result back onto the stack."
+        | Exp -> "Calculate top-most value raised to the power of e and push the result back onto the stack."
+        | Geq -> "Compare whether the second top-most stack value is greater or equal to the top-most one and push the comparison result back onto the stack."
+        | Gt -> "Compare whether the second top-most stack value is greater than the top-most one and push the comparison result back onto the stack."
+        | Halt -> "Halt the processor."
+        | Ldglob v -> !@"Load the global variable '%s' onto the stack." v.Name
+        | Ldarg i -> !@"Load the argument no. %d onto the stack." i
+        | Ldloc i -> !@"Load the local value no. %d onto the stack." i
+        | Ldmem -> "Load the value stored at the memory address indicated by the top-most stack value onto the stack - thereby consuming the memory address."
+        | Ldio -> "Load the value from the I/O-port indicated by the top-most stack value onto the stack - thereby consuming the I/O-port number."
+        | Ldmemsz -> "Load the memory size onto the stack."
+        | Ldiosz -> "Load the I/O-port count onto the stack."
+        | Ldc i -> !@"Load the constant %d (%08x) onto the stack." i i
+        | Lt -> "Compare whether the second top-most stack value is less than the top-most one and push the comparison result back onto the stack."
+        | Leq -> "Compare whether the second top-most stack value is less than or equal to the top-most one and push the comparison result back onto the stack."
+        | Log -> "Calculate the integer logarithm of the top-most stack value using the base stored in the second top-most stack value and push the result back onto the stack."
+        | Loge -> "Calculate the integer logarithm of the top-most stack value using the base e and push the result back onto the stack."
+        | Log2 -> "Calculate the integer logarithm of the top-most stack value using the base 2 and push the result back onto the stack."
+        | Log10 -> "Calculate the integer logarithm of the top-most stack value using the base 10 and push the result back onto the stack."
+        | Max -> "Determine the greater of the two top-most stack values and push the result back onto the stack."
+        | Min -> "Determine the smaller of the two top-most stack values and push the result back onto the stack."
+        | Mod -> "Calculate the integer division remainder of the two top-most stack values and push the result back onto the stack."
+        | Mul -> "Calculate the multiplication of the two top-most stack values and push the result back onto the stack."
+        | Neg -> "Negate the top-most stack value by multiplying it with -1 and push the result back onto the stack."
+        | Neq -> "Compare whether the two top-most stack values are not equal and push the comparison result back onto the stack."
+        | Not -> "Invert the top-most stack value by flipping its bits and push the result back onto the stack."
+        | Or -> "Calculate the binary OR-combination of the two top-most stack values and push the result back onto the stack."
+        | Pop -> "Pop the top-most stack value"
+        | Pow -> "Calculate second top-most value raised to the power of the top-most one and push the result back onto the stack."
+        | Regloc i -> !@"Register the size %d as number of local variables in the current stack frame." i
+        | Regglob i -> !@"Register the size %d as number of global variables in the current application." i
+        | Ret -> "Return the execution to the previous stack frame and pass the top-most stack value back as function result (if existent)."
+        | Rol -> "Calculate the binary RotateLeft-combination of the two top-most stack values and push the result back onto the stack."
+        | Ror -> "Calculate the binary RotateRight-combination of the two top-most stack values and push the result back onto the stack."
+        | Shl -> "Calculate the binary ShiftLeft-combination of the two top-most stack values and push the result back onto the stack."
+        | Shr -> "Calculate the binary ShiftRight-combination of the two top-most stack values and push the result back onto the stack."
+        | Sign -> "Determine the signum of the top-most value and push the result back onto the stack."
+        | Starg i -> !@"Pop the top-most value from the stack and store it into the argument no. %d." i
+        | Stloc i -> !@"Pop the top-most value from the stack and store it into the local variable no. %d." i
+        | Stglob v -> !@"Pop the top-most value from the stack and store it into the global variable '%s'." v.Name
+        | Stmem -> "Store the top-most stack value into the memory address indicated by the second top-most stack value."
+        | Stio -> "Write the top-most stack value to the I/O-port indicated by the second top-most stack value."
+        | Stiodir -> "Sets the I/O-port indicated by the second top-most stack value to the direction indicated by the top-most one."
+        | Sub -> "Calculate the subtraction of the two top-most stack values and push the result back onto the stack."
+        | Swap -> "Swap the two top-most stack values."
+        | Syscall i -> !@"Call the system-call no. %d." i
+        | UUID -> "Load the processor's int32-UUID onto the stack."
+        | Xor -> "Calculate the binary XOR-combination of the two top-most stack values and push the result back onto the stack."
+        | _ -> null
+       <| x
+
 
 type ASMMethod =
     {
@@ -87,6 +157,11 @@ type ASMMethod =
     override x.ToString() =
         sprintf "(\n\tName: %s\n\tInlined: %A\n\tReturnType: %A\n\tParameters: %A\n\tLocals: %A\n\tBody: (\n\t%s)\n)"
             x.Name x.IsInlined x.ReturnType x.Parameters x.Locals (String.concat "" [for i in x.Body -> "\t" + i.ToString() + "\n\t"])
+    member x.Signature =
+        let p = String.concat ", " (List.map (fun (f : ASMVariable) -> "data " + f.Name) x.Parameters)
+        let p = if p.Length = 0 then "void" else p
+        sprintf "%s : %s -> %s" x.Name p <| x.ReturnType.ToString().ToLower()
+
 
 type ASMProgram =
     {
@@ -122,7 +197,7 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
         res
 
     let rec procbinexpr expr =
-        [Comment <| "binary expression '" + expr.ToString().Replace('\n', ' ') + "'"]
+        [Comment(ASMCommentLevel.CommentExpressions, "binary expression '" + expr.ToString().Replace('\n', ' ') + "'")]
         @ ((function
             | (l, SyntaxTree.Or, r) ->
                 let leftfalselabel = mklabel()
@@ -215,7 +290,7 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
         | LocalScope i -> Stloc i
 
     and procexpr expr =
-        [Comment <| "expression '"  + expr.ToString().Replace('\n', ' ') + "'"]
+        [Comment(ASMCommentLevel.CommentExpressions, "expression '"  + expr.ToString().Replace('\n', ' ') + "'")]
         @ List.concat (match expr with
                        | ScalarAssignmentExpression(i, e) ->
                            [
@@ -288,7 +363,7 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
         )
     
     and procstatm stm =
-        [Comment <| "statement '"  + stm.ToString().Replace('\n', ' ') + "'"]
+        [Comment(ASMCommentLevel.CommentStatementsAndExpressions, "statement '"  + stm.ToString().Replace('\n', ' ') + "'")]
         @ List.concat (match stm with
                        | ExpressionStatement e ->
                            match e with
@@ -354,9 +429,12 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
     let procvardecl (mi : byref<_>) f d =
         let var = CreateASMVariable d
         let scope = f mi
-        mapping.Add(d, scope)
-        mi <- mi + 1s
-        var
+        if mapping.ContainsKey d then
+            raise <| VariableAlreadyDefined (snd d)
+        else
+            mapping.Add(d, scope)
+            mi <- mi + 1s
+            var
 
     let proclocdecl decl = procvardecl &locindex LocalScope decl
 
@@ -364,7 +442,7 @@ type ASMMethodBuilder(sares : SemanticAnalysisResult, mapping : VariableMappingD
     
     let rec collectlocdecl stm =
         let constrvar expr =
-            let var = { ASMVariable.Name = sprintf "________tmp_0x%016x" locindex }
+            let var = { ASMVariable.Name = sprintf "___tmp<>%016x" locindex }
             arrassgnloc.Add(expr, locindex)
             locindex <- locindex + 1s
             var
@@ -508,7 +586,7 @@ type ASMBuilder (sares : SemanticAnalysisResult) =
                               |> List.map procfuncdecl
                 let containscall target =
                     List.exists (function
-                                 | Call (n, _) as f -> printf "%A" f; n = target.Name
+                                 | Call (n, _) -> n = target.Name
                                  | _ -> false)
                 (builtin
                  |> List.filter (fun b -> List.exists (fun f -> containscall b f.Body) methods)

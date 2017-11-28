@@ -10,22 +10,21 @@ using System;
 using MCPUCompiler.Core.Testing;
 using MCPUCompiler.Core;
 
+using static MCPUCompiler.Core.Compiler;
+
 namespace MCPUCompiler
 {
-    using __comp = Core.Compiler;
-
-
     public sealed class Compiler
         : IDisposable
     {
         public (string, int?)[] InstructionSet { get; }
-        public bool DoNotGenerateComments { get; }
+        public ASMCommentLevel CommentingLevel { get; }
 
 
-        public Compiler((string, int?)[] instructions, bool nocomments = false)
+        public Compiler((string, int?)[] instructions, ASMCommentLevel lvl = ASMCommentLevel.NoComments)
         {
             InstructionSet = instructions;
-            DoNotGenerateComments = nocomments;
+            CommentingLevel = lvl;
         }
 
         public void Dispose()
@@ -43,11 +42,11 @@ namespace MCPUCompiler
                 // var tree = Tests.Tree03;
                 var tree = Lexer.Parse(code);
                 var sares = Parser.Analyze(tree);
-                var compl = new __comp.ASMBuilder(sares);
+                var compl = new ASMBuilder(sares);
                 var res = compl.BuildClass(tree);
                 var emt = new Emitter(res);
                 var asm = emt.Merge();
-                var outp = emt.Generate(DoNotGenerateComments);
+                var outp = emt.Generate(CommentingLevel);
                 var acode = string.Join("\n", outp).Split('\n'); // join is needed as some 'lines' can have line-breaks in themselves
                 int linenr = 1;
 
@@ -56,8 +55,6 @@ namespace MCPUCompiler
                     if (!line.Trim().StartsWith(";") && !line.Contains(':'))
                     {
                         string instr = line.Trim() + ' ';
-
-                        instr = instr.Substring(0, instr.IndexOf(' ')).ToLower();
 
                         if (!InstructionSet.Any(i => i.Item1 == instr))
                             throw Errors.CannotEmitInstruction(instr);
