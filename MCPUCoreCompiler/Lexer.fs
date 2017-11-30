@@ -211,7 +211,6 @@ reduce5 functionDeclaration typeSpec identifier openParen closeParen compoundSta
 reduce6 functionDeclaration typeSpec identifier openParen parameters closeParen compoundStatement (fun t i _ p _ c -> (t, i, p, c, false))
 reduce6 functionDeclaration inlineKeyword typeSpec identifier openParen closeParen compoundStatement (fun _ t i _ _ c -> (t, i, [], c, true))
 reduce7 functionDeclaration inlineKeyword typeSpec identifier openParen parameters closeParen compoundStatement (fun _ t i _ p _ c -> (t, i, p, c, true))
-// functional function declaration
 reduce6 functionDeclaration identifier colon parameters pointer typeSpec compoundStatement (fun i _ p _ t c -> (t, i, p, c, false))
 reduce7 functionDeclaration inlineKeyword identifier colon parameters pointer typeSpec compoundStatement (fun _ i _ p _ t c -> (t, i, p, c, true))
 
@@ -236,14 +235,12 @@ reduce1 statement continueStatement (fun _ -> ContinueStatement)
 reduce1 statement breakStatement (fun _ -> BreakStatement)
 reduce1 statement haltStatement (fun _ -> HaltStatement)
 reduce1 statement abkStatement (fun _ -> AbkStatement)
-reduce1 statementList asmStatement (fun (s : string) -> s.Trim().Split([| '\r'; '\n' |], System.StringSplitOptions.RemoveEmptyEntries)
-                                                        |> Array.map (fun s -> InlineAssemblyStatement <| s.Trim())
-                                                        |> Array.toList)
+reduce1 statement asmStatement InlineAssemblyStatement
 
 reduce2 expressionStatement expression semicolon (fun e _ -> Expression e)
 reduce1 expressionStatement semicolon (fun _ -> Nop)
 
-let genforeach c i a s : CompoundStatement =
+let genforeach (c : string) (i : string) (a : ArrayIdentifierRef) (s : Statement) : CompoundStatement =
     let max = { Identifier = nextTempVar() }
     let cnt = { Identifier = c }
     let i = { Identifier = i }

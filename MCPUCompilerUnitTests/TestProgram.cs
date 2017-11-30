@@ -48,7 +48,7 @@ namespace MCPUCompilerUnitTests
 
                         left = Console.CursorLeft;
 
-                        Console.Write($"    ] {m.Name}");
+                        Console.Write($"    ] {entry.Class.FullName}.{m.Name}");
 
                         results[m] = ((string, string))m.Invoke(instance, new object[0]);
 

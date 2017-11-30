@@ -127,7 +127,7 @@ type FunctionTable(program) as self =
     member x.Program = program
 
 type SymbolTable(program) as self =
-    inherit Dictionary<IdentifierRef, VariableDeclaration>(HashIdentity.Reference)
+    inherit Dictionary<IdentifierRef, VariableDeclaration> (HashIdentity.Reference)
 
     let whileStatementStack = Stack<WhileStatement> ()
     let symbolScopeStack = SymbolScopeStack ()
@@ -137,6 +137,12 @@ type SymbolTable(program) as self =
                               | FunctionDeclaration x -> scanFunctionDeclaration x
 
     and scanFunctionDeclaration (functionReturnType, _, parameters, compoundStatement, _) =
+        let addIdentifierMapping i =
+            if self.ContainsKey i then
+                // raise <| VariableAlreadyDefined i.Identifier
+                ()
+            else
+                self.Add(i, symbolScopeStack.CurrentScope.FindDeclaration i)
         let rec scanCompoundStatement (localDeclarations, statements) =
             symbolScopeStack.Push()
             List.iter symbolScopeStack.AddDeclaration localDeclarations
@@ -169,11 +175,6 @@ type SymbolTable(program) as self =
                             | HaltStatement
                             | AbkStatement
                             | InlineAssemblyStatement _ -> ()
-        and addIdentifierMapping i =
-            if self.ContainsKey i then
-                raise <| VariableAlreadyDefined i.Identifier
-            else
-                self.Add(i, symbolScopeStack.CurrentScope.FindDeclaration i)
         and scanExpression = function
                              | ScalarAssignmentExpression(i, e)
                              | ScalarAssignmentOperatorExpression(i, _, e) ->
