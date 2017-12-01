@@ -48,6 +48,7 @@ let binaryAssignOperator      = nterm<BinaryOperator>()
 let unaryOperator             = nterm<UnaryOperator>()
 let optionalArguments         = nterm<Arguments>()
 let arguments                 = nterm<Arguments>()
+let foreachToken              = nterm<unit>()
 
 let AssignRotateRight = term @">>>="
 let AssignShiftRight  = term @">>="
@@ -105,6 +106,7 @@ let whileKeyword      = term @"while"
 let returnKeyword     = term @"return"
 let breakKeyword      = term @"break"
 let continueKeyword   = term @"continue"
+let foreachKeyword    = term @"foreach"
 let eachKeyword       = term @"each"
 let thisKeyword       = term @"this"
 let haltKeyword       = term @"halt"
@@ -144,8 +146,8 @@ let assoc d x =
     
 assoc Left [ elseKeyword ]
 assoc Left [ singleEquals ]
-assoc Left [ colon ] // I'm not sure about this line
-assoc Right [ questionmark ] // I'm not sure about this line
+assoc Left [ questionmark ] // I'm not sure about this line
+assoc Left [ colon ]
 assoc Right [ AssignAdd; AssignAnd; AssignDivide; AssignModulo; AssignMultiply; AssignOr; AssignPower; AssignRotateLeft;
               AssignRotateRight; AssignShiftLeft; AssignShiftRight; AssignSubtract; AssignXor; ]
 assoc Left [ hat ]
@@ -183,12 +185,10 @@ let reducelist (listtype : NonTerminalWrapper<'a list>) separator element =
 let reduceclist (listtype : NonTerminalWrapper<'a list>) element =
     reduce2 listtype listtype element (fun l e -> l @ [e])
     reduce1 listtype element (fun e -> [e])
-    
-// TODO : FIX __asm STATEMENTS
+
 // TODO : ADD VAR DECLS AS FOLLOWS:
 //               var : int;
 //               var : bool;
-
 
 
 
@@ -207,12 +207,12 @@ reduce0 typeSpec intKeyword
 reduce3 staticVariableDeclaration typeSpec identifier semicolon (fun t i _ -> t, i)
 //reduce5 staticVariableDeclaration letKeyword identifier colon typeSpec newline (fun _ i _ t _ -> t, i)
 reduce5 staticVariableDeclaration letKeyword identifier colon typeSpec semicolon (fun _ i _ t _ -> t, i)
-reduce5 functionDeclaration typeSpec identifier openParen closeParen compoundStatement (fun t i _ _ c -> (t, i, [], c, false))
-reduce6 functionDeclaration typeSpec identifier openParen parameters closeParen compoundStatement (fun t i _ p _ c -> (t, i, p, c, false))
-reduce6 functionDeclaration inlineKeyword typeSpec identifier openParen closeParen compoundStatement (fun _ t i _ _ c -> (t, i, [], c, true))
-reduce7 functionDeclaration inlineKeyword typeSpec identifier openParen parameters closeParen compoundStatement (fun _ t i _ p _ c -> (t, i, p, c, true))
-reduce6 functionDeclaration identifier colon parameters pointer typeSpec compoundStatement (fun i _ p _ t c -> (t, i, p, c, false))
-reduce7 functionDeclaration inlineKeyword identifier colon parameters pointer typeSpec compoundStatement (fun _ i _ p _ t c -> (t, i, p, c, true))
+reduce5 functionDeclaration typeSpec identifier openParen closeParen compoundStatement (fun t i _ _ c -> t, i, [], c, false)
+reduce6 functionDeclaration typeSpec identifier openParen parameters closeParen compoundStatement (fun t i _ p _ c -> t, i, p, c, false)
+reduce6 functionDeclaration inlineKeyword typeSpec identifier openParen closeParen compoundStatement (fun _ t i _ _ c -> t, i, [], c, true)
+reduce7 functionDeclaration inlineKeyword typeSpec identifier openParen parameters closeParen compoundStatement (fun _ t i _ p _ c -> t, i, p, c, true)
+reduce6 functionDeclaration identifier colon parameters pointer typeSpec compoundStatement (fun i _ p _ t c -> t, i, p, c, false)
+reduce7 functionDeclaration inlineKeyword identifier colon parameters pointer typeSpec compoundStatement (fun _ i _ p _ t c -> t, i, p, c, true)
 
 reduce0 parameters parameterList
 reduce1 parameters voidKeyword (fun _ -> [])
@@ -288,6 +288,9 @@ let genforeach (c : string) (i : string) (a : ArrayIdentifierRef) (s : Statement
         )
     ]
 
+reduce2 foreachToken forKeyword eachKeyword (fun _ _ -> ())
+reduce1 foreachToken foreachKeyword (fun _ -> ())
+
 reduce4 compoundStatement openCurly optionalLocalDeclarations optionalStatementList closeCurly (fun _ l s _ -> (l, s))
 reduce12 compoundStatement forKeyword openParen intKeyword identifier singleEquals expression semicolon expression semicolon expression closeParen statement (fun _ _ _ i _ f _ t _ o _ s ->
     let i = { Identifier = i }
@@ -324,10 +327,10 @@ reduce8 compoundStatement forKeyword openParen expressionStatement expression se
         )
     ]
 )
-reduce12 compoundStatement forKeyword eachKeyword openParen intKeyword identifier pointer intKeyword identifier inKeyword arridentifier closeParen statement (fun _ _ _ _ k _ _ v _ a _ s -> genforeach k v a s)
-reduce10 compoundStatement forKeyword eachKeyword openParen identifier pointer identifier inKeyword arridentifier closeParen statement (fun _ _ _ k _ v _ a _ s -> genforeach k v a s)
-reduce9 compoundStatement forKeyword eachKeyword openParen intKeyword identifier inKeyword arridentifier closeParen statement (fun _ _ _ _ i _ a _ s -> genforeach (nextTempVar()) i a s)
-reduce8 compoundStatement forKeyword eachKeyword openParen identifier inKeyword arridentifier closeParen statement (fun _ _ _ i _ a _ s -> genforeach (nextTempVar()) i a s)
+reduce11 compoundStatement foreachToken openParen intKeyword identifier pointer intKeyword identifier inKeyword arridentifier closeParen statement (fun _ _ _ k _ _ v _ a _ s -> genforeach k v a s)
+reduce9 compoundStatement foreachToken openParen identifier pointer identifier inKeyword arridentifier closeParen statement (fun _ _ k _ v _ a _ s -> genforeach k v a s)
+reduce8 compoundStatement foreachToken openParen intKeyword identifier inKeyword arridentifier closeParen statement (fun _ _ _ i _ a _ s -> genforeach (nextTempVar()) i a s)
+reduce7 compoundStatement foreachToken openParen identifier inKeyword arridentifier closeParen statement (fun _ _ i _ a _ s -> genforeach (nextTempVar()) i a s)
 
 reduce5 whileStatement untilKeyword openParen expression closeParen statement (fun _ _ e _ s -> (UnaryExpression(LogicalNegate, e), s))
 reduce5 whileStatement whileKeyword openParen expression closeParen statement (fun _ _ e _ s -> e, s)
@@ -344,7 +347,7 @@ reduce3 localDeclaration typeSpec identifier semicolon (fun t i _ -> t, i)
 //reduce5 localDeclaration letKeyword identifier colon typeSpec newline (fun _ i _ t _ -> t, i)
 reduce5 localDeclaration letKeyword identifier colon typeSpec semicolon (fun _ i _ t _ -> t, i)
 
-reduce6 ifStatement ifKeyword openParen expression closeParen statement optionalElseStatement (fun _ _ e _ s o -> (e, s, o))
+reduce6 ifStatement ifKeyword openParen expression closeParen statement optionalElseStatement (fun _ _ e _ s o -> e, s, o)
 
 let elseStatementProduction : ProductionWrapper<string, Statement, Statement option> = optionalElseStatement.AddProduction(elseKeyword, statement)
 let elseEpsilonProduction = optionalElseStatement.AddProduction()

@@ -93,9 +93,8 @@ type NonTerminalWrapper<'T> (nonTerminal : INonTerminal<obj>) =
         nonTerminal.AddProduction()
         |> ProductionWrapper<'T>
         
-    member x.AddProduction p =
-        nonTerminal.AddProduction !>p
-        |> ProductionWrapper<'a,'T>
+    member x.AddProduction p = nonTerminal.AddProduction !>p
+                               |> ProductionWrapper<'a,'T>
         
     member x.AddProduction (p1, p2) =
         nonTerminal.AddProduction(!>p1, !>p2)

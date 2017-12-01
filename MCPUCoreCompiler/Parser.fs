@@ -211,7 +211,7 @@ type SymbolTable(program) as self =
     member x.GetIdentifierTypeSpec id = DeclarationType self.[id]
     
 type ExpressionTypeDictionary(program, functionTable : FunctionTable, symbolTable : SymbolTable) as self =
-    inherit Dictionary<Expression, VariableType>(HashIdentity.Reference)
+    inherit Dictionary<Expression, VariableType> (HashIdentity.Reference)
 
     let rec scanDeclaration = function
                               | FunctionDeclaration x -> scanFunctionDeclaration x
